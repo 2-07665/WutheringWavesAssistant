@@ -126,7 +126,7 @@ class BaseMornye(BaseResonator):
             energy_count = 20
         if self._rest_mass_energy_50_checker.check(img):
             energy_count = 50
-        if self._rest_mass_energy_80_point.check(img):
+        if self._rest_mass_energy_80_checker.check(img):
             energy_count = 80
         logger.debug(f"{self.resonator_name().value}-静质量能: {energy_count}格")
         return energy_count

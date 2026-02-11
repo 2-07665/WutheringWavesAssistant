@@ -176,9 +176,12 @@ cython_debug/
 git/
 temp/
 logs/
-docs/
 assets/screenshot/
 config.yaml
 .pre-commit-config.yaml
 tests/test/
 WWA_updater.exe
+
+# Local development files
+local/
+CLAUDE.md

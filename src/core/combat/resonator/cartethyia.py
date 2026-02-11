@@ -151,7 +151,7 @@ class BaseCartethyia(BaseResonator):
         return is_ready
 
     def is_resonance_skill_fleurdelys_2_ready(self, img: np.ndarray) -> bool:
-        is_ready = self._resonance_skill_fleurdelys_checker.check(img)
+        is_ready = self._resonance_skill_fleurdelys_2_checker.check(img)
         logger.debug(f"芙露德莉斯-共鸣技能 E2: {is_ready}")
         return is_ready
 
@@ -745,7 +745,7 @@ class Cartethyia(BaseCartethyia):
         ]
 
     def fleurdelys_to_avatar_cartethyia_Ra3(self):
-        logger.debug("avatar_cartethyia_to_fleurdelys_Ra3")
+        logger.debug("fleurdelys_to_avatar_cartethyia_Ra3")
         return [
             # 大卡切化身小卡
             # ["R", 0.05, 1.10],
