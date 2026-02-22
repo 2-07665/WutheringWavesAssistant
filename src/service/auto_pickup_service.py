@@ -208,6 +208,7 @@ class AutoPickupServiceImpl(PageEventAbstractService):
             "基准奇藏箱": "基准奇藏箱",
             "精密奇藏箱": "精密奇藏箱",
             "辉光奇藏箱": "辉光奇藏箱",
+            "涡纹奇藏箱": "涡纹奇藏箱",
             "潮汐之遗": "潮汐之遗",
         }
 

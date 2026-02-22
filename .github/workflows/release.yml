@@ -65,6 +65,8 @@ jobs:
 
       - name: 🧑‍💻 wwa cpu版本 安装依赖并打包
         run: |
+          $ErrorActionPreference = "Stop"
+          
           # 解压 Python 到临时目录
           Expand-Archive -Path $env:PY_ZIP_NAME -DestinationPath "$env:TEMP_WORKSPACE\py312"
           
@@ -77,6 +79,7 @@ jobs:
           & "py312\python.exe" -m pip install poetry==2.1.1
           & "py312\python.exe" -m poetry config virtualenvs.create false
           & "py312\python.exe" -m poetry install -E cpu --no-root -v
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           & "py312\python.exe" -m pip list
           
           # 打包到上一级目录
@@ -96,6 +99,8 @@ jobs:
 
       - name: 🧑‍💻 wwa gpu cuda12.6版本 安装依赖并打包
         run: |
+          $ErrorActionPreference = "Stop"
+          
           # 解压 Python 到临时目录
           Expand-Archive -Path $env:PY_ZIP_NAME -DestinationPath "$env:TEMP_WORKSPACE\py312"
 
@@ -108,6 +113,7 @@ jobs:
           & "py312\python.exe" -m pip install poetry==2.1.1
           & "py312\python.exe" -m poetry config virtualenvs.create false
           & "py312\python.exe" -m poetry install -E cu126 --no-root -v
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           & "py312\python.exe" -m pip list
 
           # 打包到上一级目录
@@ -127,6 +133,8 @@ jobs:
 
       - name: 🧑‍💻 wwa gpu cuda12.9版本 安装依赖并打包
         run: |
+          $ErrorActionPreference = "Stop"
+          
           # 解压 Python 到临时目录
           Expand-Archive -Path $env:PY_ZIP_NAME -DestinationPath "$env:TEMP_WORKSPACE\py312"
 
@@ -139,16 +147,17 @@ jobs:
           & "py312\python.exe" -m pip install poetry==2.1.1
           & "py312\python.exe" -m poetry config virtualenvs.create false
           & "py312\python.exe" -m poetry install -E cu129 --no-root -v
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           & "py312\python.exe" -m pip list
 
           # 打包到上一级目录
-          7z a "..\wwa-gpu-cu129-${{ env.VERSION }}-original.7z" "*" -m0=lzma2 -mx=9 -md=128m -ms=64m -mmt=on
+          7z a "..\wwa-gpu-cu129-${{ env.VERSION }}-full.7z" "*" -m0=lzma2 -mx=9 -md=128m -ms=64m -mmt=on
           # 分割
-          7z a -v1500m "..\wwa-gpu-cu129-${{ env.VERSION }}.7z" "..\wwa-gpu-cu129-${{ env.VERSION }}-original.7z"
+          7z a -v1500m "..\wwa-gpu-cu129-${{ env.VERSION }}.7z" "..\wwa-gpu-cu129-${{ env.VERSION }}-full.7z"
 
           # 清理临时 Python
           Remove-Item "py312" -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item "..\wwa-gpu-cu129-${{ env.VERSION }}-original.7z" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item "..\wwa-gpu-cu129-${{ env.VERSION }}-full.7z" -Recurse -Force -ErrorAction SilentlyContinue
 
           # 回到原目录
           Pop-Location
@@ -161,6 +170,8 @@ jobs:
 
       - name: 🧑‍💻 wwa gpu cuda11.8版本 安装依赖并打包
         run: |
+          $ErrorActionPreference = "Stop"
+          
           # 解压 Python 到临时目录
           Expand-Archive -Path $env:PY_ZIP_NAME -DestinationPath "$env:TEMP_WORKSPACE\py312"
 
@@ -173,6 +184,7 @@ jobs:
           & "py312\python.exe" -m pip install poetry==2.1.1
           & "py312\python.exe" -m poetry config virtualenvs.create false
           & "py312\python.exe" -m poetry install -E cu118 --no-root -v
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           & "py312\python.exe" -m pip list
 
           # 打包到上一级目录
@@ -239,16 +251,14 @@ jobs:
           
           # 组合固定话术和动态版本记录
           $fixedText = @"
-          🎉 **新版本发布！**
+          #### 🎉 新版本发布！
           
           ⚡ 本次更新包含以下内容：
-          ```
           "@
 
           $fixedDownloadText = @"
-          ```
           
-          📦 **下载说明：**
+          #### 📦 下载说明：
           - `wwa-${{ env.VERSION }}.7z` - 标准通用版本，适合所有windows电脑，如AMD显卡的用户  
           - `wwa-gpu-cu118-${{ env.VERSION }}.7z` - NVIDIA显卡专属，GPU加速通用版，适合旧N卡  
           - `wwa-gpu-cu126-${{ env.VERSION }}.7z` - NVIDIA显卡专属，GPU加速新版，40系列显卡  
@@ -259,13 +269,13 @@ jobs:
           
           **建议使用gpu版**，作者4070使用gpu-cu126版  
           
-          ▶️ **使用说明：**
-          脚本免安装解压即可运行  
+          #### ▶️ 使用说明：
+          **脚本免安装解压即可运行**  
           - 下载后解压，剪切到一个**路径没有中文的目录**。若无法解压，[点击下载7z](https://www.7-zip.org/)  
           - 双击**WWA一键更新.bat**并选择合适的更新渠道（无梯子建议选国内加速）升级到最新，双击**WWA.exe**启动脚本  
           - Windows系统设置：关闭HDR（默认关闭），关闭英伟达显卡滤镜（默认关闭），关闭微星小飞机（不认识这个就不用管）  
           - 游戏内设置：
-            - 简体中文，重置按键，重置滤镜，重置亮度  
+            - **简体中文，重置按键，重置滤镜，重置亮度**  
             - 控制 镜头设置：  
               - 镜头重置：开  
               - 移动镜头修正：开  

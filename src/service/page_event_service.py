@@ -2356,6 +2356,7 @@ class PageEventAbstractService(PageEventService, ABC):
                 if re.match(find_boss_name_reg, findBossTemp.text):
                     # logger.info(f"匹配坐标：{findBossTemp}")
                     findBoss = findBossTemp
+                    break
 
         if not findBoss:
             self._control_service.esc()
