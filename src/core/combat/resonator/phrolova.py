@@ -1,11 +1,10 @@
 import logging
-import random
-import time
 
 import numpy as np
 
 from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum, LogicEnum, \
     ScenarioEnum
+from src.core.combat.resonator.generic import GenericCombo
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -90,8 +89,7 @@ class BasePhrolova(BaseResonator):
         ## 运行时参数
         # 上次释放定音的单调时间
         self._resolving_chord_monotonic_time = None
-        self._resolving_chord_cd = 24 # 秒
-
+        self._resolving_chord_cd = 24  # 秒
 
     def __str__(self):
         return self.resonator_name().name
@@ -162,72 +160,15 @@ class BasePhrolova(BaseResonator):
 
 
 class Phrolova(BasePhrolova):
-    # COMBO_SEQ 为训练场单人静态完整连段，后续开发以此为准从中拆分截取
-
-    COMBO_SEQ = [
-        ["a", 0.05, 0.30],
-        ["a", 0.05, 0.30],
-        ["a", 0.05, 0.30],
-        ["a", 0.05, 0.30],
-
-        ["z", 0.50, 0.50],
-        ["R", 0.05, 0.50],
-        ["Q", 0.05, 0.50],
-    ]
 
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
-
-    def a4(self):
-        logger.debug("a4")
-        return [
-            ["a", 0.05, 0.30],
-            ["a", 0.05, 0.30],
-            ["a", 0.05, 0.30],
-            ["a", 0.05, 0.30],
-        ]
-
-    def Eaa(self):
-        logger.debug("Eaa")
-        return [
-            ["E", 0.05, 0.50],
-            ["a", 0.05, 0.30],
-            ["a", 0.05, 0.30],
-        ]
-
-    def E(self):
-        logger.debug("E")
-        return [
-            # 共鸣技能 E
-            ["E", 0.05, 0.50],
-        ]
-
-    def z(self):
-        logger.debug("z")
-        return [
-            ["z", 0.50, 0.50],
-        ]
-
-    def Q(self):
-        logger.debug("Q")
-        return [
-            ["Q", 0.05, 0.50],
-        ]
-
-    def R(self):
-        logger.debug("R")
-        return [
-            ["R", 0.05, 0.50],
-        ]
-
-    def full_combo(self):
-        # 测试用，一整套连招
-        return self.COMBO_SEQ
+        self._generic_combo = GenericCombo(control_service)
 
     def exit_special_state(self, scenario_enum: ScenarioEnum | None = None):
         if scenario_enum != ScenarioEnum.BeforeEchoSearch:
             return
-        logger.debug("quit_R")
+        logger.debug("exit_special_state")
         img = self.img_service.screenshot()
         if not self.is_cue_curtain_call_ready(img):
             return
@@ -238,12 +179,4 @@ class Phrolova(BasePhrolova):
         self.combo_action(quit_seq, True, ignore_event=True)
 
     def combo(self):
-        self.combo_action(self.a4(), False)
-
-        combo_list = [self.Eaa(), self.R(), self.z()]
-        random.shuffle(combo_list)
-        for i in combo_list:
-            self.combo_action(i, False)
-            time.sleep(0.15)
-
-        self.combo_action(self.Q(), False)
+        self._generic_combo.combo(self)

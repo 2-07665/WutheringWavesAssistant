@@ -16,10 +16,4 @@ rc wwa.rc
 cl wwa.c wwa.res /Fe:WWA.exe /link /SUBSYSTEM:WINDOWS /MANIFEST:EMBED /MANIFESTUAC:"level='requireAdministrator' uiAccess='false'"
 ```
 
-```cmd
-rc updater.rc
-
-cl updater.c updater.res /Fe:WWA_updater.exe /link /SUBSYSTEM:WINDOWS /MANIFEST:EMBED /MANIFESTUAC:"level='requireAdministrator' uiAccess='false'"
-```
-
 

@@ -1,7 +1,5 @@
-import asyncio
 import logging
 import time
-from asyncio import Task
 from concurrent.futures import ThreadPoolExecutor
 from threading import RLock
 
@@ -63,23 +61,6 @@ class YoloServiceImpl(ODService):
         logger.debug("box: %s, scores: %s, class_id: %s", box, score, class_id)
         # x1, y1, w, h = box
         return box
-
-    # def async_search_echo(self, img: np.ndarray | None = None) -> Task:
-    #     return asyncio.create_task(
-    #         self._async_search_echo(img),
-    #     )
-    #
-    # async def _async_search_echo(self, img: np.ndarray | None = None) -> tuple[int, int, int, int] | None:
-    #     loop = asyncio.get_running_loop()
-    #     try:
-    #         return await loop.run_in_executor(  # 将同步方法提交到线程池
-    #             self._executor,  # 线程池
-    #             self.search_echo,  # 要执行的同步方法
-    #             img  # 参数
-    #         )
-    #     except Exception as e:
-    #         logger.error(f"Inference failed: {e}")
-    #         return None
 
     @staticmethod
     def get_model_by_boss_name(boss_name: str):

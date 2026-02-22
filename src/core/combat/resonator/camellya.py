@@ -477,7 +477,7 @@ class Camellya(BaseCamellya):
         return self.COMBO_SEQ
 
     def exit_special_state(self, scenario_enum: ScenarioEnum | None = None):
-        logger.debug("quit_blossom")
+        logger.debug("exit_special_state")
         self.combo_action(self.ja(), True, ignore_event=True)
         # 椿落地会前移，后闪复位
         self.control_service.dash_dodge()

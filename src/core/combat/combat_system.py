@@ -4,6 +4,7 @@ import time
 
 from src.core.combat.combat_core import TeamMemberSelector, BaseResonator, CharClassEnum, ResonatorNameEnum, \
     ScenarioEnum
+from src.core.combat.resonator.aemeath import Aemeath
 from src.core.combat.resonator.camellya import Camellya
 from src.core.combat.resonator.cantarella import Cantarella
 from src.core.combat.resonator.cartethyia import Cartethyia
@@ -60,6 +61,7 @@ class CombatSystem:
         self.lynae = Lynae(self.control_service, self.img_service)
         self.mornye = Mornye(self.control_service, self.img_service)
         self.cantarella = Cantarella(self.control_service, self.img_service)
+        self.aemeath = Aemeath(self.control_service, self.img_service)
 
         self.resonator_map: dict[ResonatorNameEnum, BaseResonator] = {
             ResonatorNameEnum.jinhsi: self.jinhsi,
@@ -76,6 +78,7 @@ class CombatSystem:
             ResonatorNameEnum.lynae: self.lynae,
             ResonatorNameEnum.mornye: self.mornye,
             ResonatorNameEnum.cantarella: self.cantarella,
+            ResonatorNameEnum.aemeath: self.aemeath,
         }
         self.resonators: list[BaseResonator] | None = None
         self._sorted_resonators: list[tuple[BaseResonator, int]] | None = None

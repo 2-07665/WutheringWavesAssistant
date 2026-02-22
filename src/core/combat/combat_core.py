@@ -526,7 +526,7 @@ class ScenarioEnum(Enum):
 
 
 class BaseResonator(BaseCombo):
-    """ 共鸣者 """
+    """ 共鸣者基类，定义了一些常用函数，可按需实现 """
 
     ## boss hp
     # 血条为黄到红的渐变色
@@ -613,9 +613,14 @@ class BaseResonator(BaseCombo):
         raise NotImplementedError()
 
     def exit_special_state(self, scenario_enum: ScenarioEnum | None = None):
+        """
+        脱离特殊状态，部分角色可变身飞天等，影响移动，需实现此函数
+        :param scenario_enum: 调用此函数时的场景，可根据场景做不同实现
+        :return:
+        """
         pass
 
-    def combo(self) -> bool:
+    def combo(self):
         raise NotImplementedError()
 
     @classmethod

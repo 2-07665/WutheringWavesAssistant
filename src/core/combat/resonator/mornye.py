@@ -244,10 +244,10 @@ class Mornye(BaseMornye):
     def exit_special_state(self, scenario_enum: ScenarioEnum | None = None):
         if scenario_enum != ScenarioEnum.BeforeEchoSearch:
             return
+        logger.debug("exit_special_state")
         img = self.img_service.screenshot()
         if not self.is_wide_field_observation_mode_ready(img):
             return
-        logger.debug("quit_wide_field_observation_mode")
         quit_seq = [
             ["j", 0.05, 2.00],
         ]

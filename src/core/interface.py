@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-# from asyncio import Task
 from enum import Enum
 
 import numpy as np
@@ -112,10 +111,6 @@ class ODService(ABC):
     def search_echo(self, img: np.ndarray | None = None) -> list[int, int, int, int] | None:
         pass
 
-    # @abstractmethod
-    # def async_search_echo(self, img: np.ndarray | None = None) -> Task:
-    #     pass
-
     @abstractmethod
     def search_reward(self, img: np.ndarray | None = None) -> tuple[int, int, int, int] | None:
         pass
@@ -136,11 +131,6 @@ class OCRService(ABC):
     def find_text(self, targets: str | list[str], img: np.ndarray | None = None,
                   position: Position | DynamicPosition | None = None) -> TextPosition | None:
         pass
-
-    # @abstractmethod
-    # def async_find_text(self, targets: str | list[str], img: np.ndarray | None = None,
-    #                     position: Position | DynamicPosition | None = None) -> Task:
-    #     pass
 
     @abstractmethod
     def wait_text(self, targets: str | list[str], timeout: float = 3.0,
