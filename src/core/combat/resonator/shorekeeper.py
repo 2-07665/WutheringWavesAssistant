@@ -180,8 +180,9 @@ class Shorekeeper(BaseShorekeeper):
         logger.debug("ja")
         return [
             # 清空能量
-            ["j", 0.05, 0.17],
-            ["a", 0.05, 0.10],
+            ["j", 0.05, 0.05],
+            ["a", 0.05, 0.05],
+            ["w", 0.00, 0.17],
         ]
 
     def zaEja(self):
@@ -282,7 +283,7 @@ class Shorekeeper(BaseShorekeeper):
     def R(self):
         logger.debug("R")
         return [
-            ["R", 0.05, 3.08],
+            ["R", 0.05, 3.42],
         ]
 
     def full_combo(self):

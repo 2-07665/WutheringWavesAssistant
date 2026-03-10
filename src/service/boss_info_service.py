@@ -77,7 +77,7 @@ FAST_TRAVEL_ROUTES: dict[str, list[RouteStep]] = {
     BossNameEnum.ReactorHusk.value: [RouteStep(direction=Direction.FORWARD, mode=MoveMode.RUN, duration=4.8)],
     BossNameEnum.Sigillum.value: [RouteStep(direction=Direction.LEFT, mode=MoveMode.WALK, steps=3)],
     BossNameEnum.NamelessExplorer.value: [
-        RouteStep(direction=Direction.FORWARD, mode=MoveMode.WALK, steps=5),
+        RouteStep(direction=Direction.FORWARD, mode=MoveMode.WALK, steps=4),
         RouteStep(direction=Direction.LEFT, mode=MoveMode.RUN, duration=1.4)],  # 3.2
 }
 

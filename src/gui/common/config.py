@@ -14,6 +14,7 @@ from qfluentwidgets import (qconfig, QConfig, ConfigItem, OptionsConfigItem, Boo
                             FolderListValidator, Theme, FolderValidator, ConfigSerializer, EnumSerializer,
                             exceptionHandler, ConfigValidator)
 from src import __version__
+from src.gui.common.boss import BossNameEnum
 from src.gui.common.globals import globalSignal
 
 logger = logging.getLogger(__name__)
@@ -92,79 +93,6 @@ cfg.themeMode.value = Theme.AUTO
 # qconfig.load('temp/config/config.json', cfg)
 _qconfigPath = str(Path(__file__).parent.parent.parent.parent.joinpath('temp/config/config.json'))
 qconfig.load(_qconfigPath, cfg)
-
-
-class BossNameEnum(Enum):
-    Dreamless = "无妄者"
-    FallacyOfNoReturn = "无归的谬误"
-    LampylumenMyriad = "辉萤军势"
-    BellBorneGeochelone = "鸣钟之龟"
-    InfernoRider = "燎照之骑"
-    ImpermanenceHeron = "无常凶鹭"
-    MechAbomination = "聚械机偶"
-    MourningAix = "哀声鸷"
-    ThunderingMephis = "朔雷之鳞"
-    TempestMephis = "云闪之鳞"
-    FeilianBeringal = "飞廉之猩"
-    Crownless = "无冠者"
-    Jue = "角"
-    SentryConstruct = "异构武装"
-    Hecate = "赫卡忒"
-    Lorelei = "罗蕾莱"
-    DragonOfDirge = "叹息古龙"
-    NightmareFeilianBeringal = "梦魇飞廉之猩"
-    NightmareImpermanenceHeron = "梦魇无常凶鹭"
-    NightmareTempestMephis = "梦魇云闪之鳞"
-    NightmareThunderingMephis = "梦魇朔雷之鳞"
-    NightmareCrownless = "梦魇无冠者"
-    NightmareInfernoRider = "梦魇燎照之骑"
-    NightmareMourningAix = "梦魇哀声鸷"
-    NightmareLampylumenMyriad = "梦魇辉萤军势"
-    Fleurdelys = "芙露德莉斯"
-    NightmareKelpie = "梦魇凯尔匹"
-    LionessOfGlory = "荣耀狮像"
-    NightmareHecate = "梦魇赫卡忒"
-    Fenrico = "芬莱克"
-    LadyOfTheSea = "海之女"
-    TheFalseSovereign = "伪作的神王"
-    ThrenodianLeviathan = "鸣式利维亚坦"
-    Hyvatia = "海维夏"
-    ReactorHusk = "炉芯机骸"
-    Sigillum = "辛吉勒姆"
-    NamelessExplorer = "无铭探索者"
-
-    # Dreamless = ("无妄者", "Dreamless")
-    # FallacyOfNoReturn = ("无归的谬误", "Fallacy of No Return")
-    # LampylumenMyriad = ("辉萤军势", "Lampylumen Myriad")
-    # BellBorneGeochelone = ("鸣钟之龟", "Bell-Borne Geochelone")
-    # InfernoRider = ("燎照之骑", "Inferno Rider")
-    # ImpermanenceHeron = ("无常凶鹭", "Impermanence Heron")
-    # MechAbomination = ("聚械机偶", "Mech Abomination")
-    # MourningAix = ("哀声鸷", "Mourning Aix")
-    # ThunderingMephis = ("朔雷之鳞", "Thundering Mephis")
-    # TempestMephis = ("云闪之鳞", "Tempest Mephis")
-    # FeilianBeringal = ("飞廉之猩", "Feilian Beringal")
-    # Crownless = ("无冠者", "Crownless")
-    # Jue = ("角", "Jué")
-    # SentryConstruct = ("异构武装", "Sentry Construct")
-    # Hecate = ("赫卡忒", "Hecate")
-    # Lorelei = ("罗蕾莱", "Lorelei")
-    # DragonOfDirge = ("叹息古龙", "Dragon of Dirge")
-    # NightmareFeilianBeringal = ("梦魇飞廉之猩", "Nightmare: Feilian Beringal")
-    # NightmareImpermanenceHeron = ("梦魇无常凶鹭", "Nightmare: Impermanence Heron")
-    # NightmareTempestMephis = ("梦魇云闪之鳞", "Nightmare: Tempest Mephis")
-    # NightmareThunderingMephis = ("梦魇朔雷之鳞", "Nightmare: Thundering Mephis")
-    # NightmareCrownless = ("梦魇无冠者", "Nightmare: Crownless")
-    # NightmareInfernoRider = ("梦魇燎照之骑", "Nightmare: Inferno Rider")
-    # NightmareMourningAix = ("梦魇哀声鸷", "Nightmare: Mourning Aix")
-    # NightmareLampylumenMyriad = ("梦魇辉萤军势", "Nightmare: Lampylumen Myriad")
-    # Fleurdelys = ("芙露德莉斯", "Fleurdelys")
-
-    # @classmethod
-    # def get_boss_name(cls):
-    #     # return {member.name: member.value for member in cls}
-    #     # TODO tr
-    #     return [member.value[1] for member in cls]
 
 
 class BossNameListValidator(ConfigValidator):

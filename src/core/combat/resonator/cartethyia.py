@@ -203,7 +203,7 @@ class Cartethyia(BaseCartethyia):
     COMBO_SEQ = [
         # 小卡
         # 普攻4a 召唤神权剑
-        ["a", 0.05, 0.36],
+        ["a", 0.05, 0.31],
         ["a", 0.05, 0.67],
         ["a", 0.05, 0.84],
         ["a", 0.05, 1.20],
@@ -274,7 +274,7 @@ class Cartethyia(BaseCartethyia):
         # 先打一套三剑下劈
 
         # 普攻4a
-        ["a", 0.05, 0.33],
+        ["a", 0.05, 0.31],
         ["a", 0.05, 0.67],
         ["a", 0.05, 0.84],
         # ["a", 0.05, 1.20],
@@ -423,13 +423,13 @@ class Cartethyia(BaseCartethyia):
         return [
             # 小卡
             # 普攻4a 召唤神权剑
-            # ["a", 0.05, 0.36],
+            # ["a", 0.05, 0.31],
             ["a", 0.05, 0.10],
             ["a", 0.05, 0.16],
 
             # ["a", 0.05, 0.67],
             ["a", 0.05, 0.30],
-            ["a", 0.05, 0.27],
+            ["a", 0.05, 0.32],
 
             # ["a", 0.05, 0.84],
             ["a", 0.05, 0.25],
@@ -454,13 +454,13 @@ class Cartethyia(BaseCartethyia):
         logger.debug("cartethyia_a2_start")
         return [
             # 普攻前两下
-            # ["a", 0.05, 0.36],
+            # ["a", 0.05, 0.31],
             ["a", 0.05, 0.10],
             ["a", 0.05, 0.16],
 
             # ["a", 0.05, 0.67],
             ["a", 0.05, 0.30],
-            ["a", 0.05, 0.27],
+            ["a", 0.05, 0.32],
         ]
 
     def cartethyia_a2_end(self):
@@ -483,7 +483,7 @@ class Cartethyia(BaseCartethyia):
     #     return [
     #         # 小卡
     #         # 普攻4a
-    #         ["a", 0.05, 0.33],
+    #         ["a", 0.05, 0.31],
     #         ["a", 0.05, 0.67],
     #         ["a", 0.05, 0.84],
     #         # ["a", 0.05, 1.20],
@@ -504,13 +504,13 @@ class Cartethyia(BaseCartethyia):
             # 普攻4a
             # 小卡
             # 普攻4a 召唤神权剑
-            # ["a", 0.05, 0.36],
+            # ["a", 0.05, 0.31],
             ["a", 0.05, 0.10],
             ["a", 0.05, 0.16],
 
             # ["a", 0.05, 0.67],
             ["a", 0.05, 0.30],
-            ["a", 0.05, 0.27],
+            ["a", 0.05, 0.32],
 
             # ["a", 0.05, 0.84],
             ["a", 0.05, 0.25],
@@ -567,20 +567,22 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.75],
         ]
 
-    # def cartethyia_Eza(self):
-    #     logger.debug("cartethyia_Eza")
-    #     return [
-    #         # Eza
-    #         # ["E", 0.05, 0.60],
-    #         ["E", 0.05, 0.20],
-    #         ["E", 0.05, 0.45],
-    #
-    #         ["z", 0.90, 0.20],
-    #         # ["a", 0.05, 1.00],
-    #         ["a", 0.05, 0.15],
-    #         ["a", 0.05, 0.15],
-    #         ["w", 0.00, 0.65],
-    #     ]
+    def cartethyia_zjEda(self):
+        logger.debug("cartethyia_zjEda")
+        return [
+            # zEa
+            # ["z", 0.90, 0.20],
+            ["z", 0.75, 0.25],
+            ["j", 0.05, 0.05],
+            # ["E", 0.05, 0.60],
+            ["E", 0.05, 0.10],
+            ["E", 0.05, 0.45],
+            ["d", 0.05, 0.00],
+            # ["a", 0.05, 1.00],
+            ["a", 0.05, 0.10],
+            ["a", 0.05, 0.10],
+            ["w", 0.00, 0.65],
+        ]
 
     def cartethyia_Eza(self):
         logger.debug("cartethyia_Eza")
@@ -847,8 +849,8 @@ class Cartethyia(BaseCartethyia):
             # EaaEaaa
             # ["E", 0.05, 0.93],
             ["E", 0.05, 0.13],
-            ["a", 0.05, 0.15],
-            ["a", 0.05, 0.25],
+            ["E", 0.05, 0.20],
+            ["a", 0.05, 0.20],
             ["a", 0.05, 0.25],
 
             # ["a", 0.05, 0.68],
@@ -858,8 +860,8 @@ class Cartethyia(BaseCartethyia):
             # ["a", 0.05, 1.20],
             ["a", 0.05, 0.25],
             ["a", 0.05, 0.25],
-            ["a", 0.05, 0.30],
-            ["E", 0.05, 0.30],
+            ["a", 0.05, 0.45],
+            ["E", 0.05, 0.10],
 
             # ["E", 0.05, 1.65],
             ["E", 0.05, 0.30],
@@ -903,13 +905,13 @@ class Cartethyia(BaseCartethyia):
             # ["a", 0.05, 1.20],
             ["a", 0.05, 0.25],
             ["a", 0.05, 0.25],
-            ["a", 0.05, 0.30],
-            ["E", 0.05, 0.30],
+            ["a", 0.05, 0.45],
+            ["E", 0.05, 0.10],
 
             # ["E", 0.05, 1.65],
             ["E", 0.05, 0.10],
             ["E", 0.05, 0.10],
-            ["E", 0.05, 1.35],
+            ["w", 0.00, 1.50],
         ]
 
     def fleurdelys_R_blade_of_howling_squall(self):
@@ -991,7 +993,7 @@ class Cartethyia(BaseCartethyia):
                 if boss_hp <= 0.01:
                     return
                 time.sleep(0.15)
-                self.combo_action(self.cartethyia_Eza(), False)
+                self.combo_action(self.cartethyia_zjEda(), False)
             return
 
         self.combo_action(self.Q(), False)
@@ -1008,7 +1010,7 @@ class Cartethyia(BaseCartethyia):
                 if boss_hp <= 0.01:
                     return
                 time.sleep(0.15)
-                self.combo_action(self.cartethyia_Eza(), self.is_avatar_cartethyia_attack_done)
+                self.combo_action(self.cartethyia_zjEda(), self.is_avatar_cartethyia_attack_done)
             else:
                 self.combo_action(self.cartethyia_a4(), self.is_avatar_cartethyia_attack_done)
             if boss_hp <= 0.01:
@@ -1068,10 +1070,9 @@ class Cartethyia(BaseCartethyia):
                         self.combo_action(self.cartethyia_E(), False)
                         time.sleep(0.2)
                     else:
-                        # self.combo_action(self.cartethyia_a4Eza(), False)
                         self.combo_action(self.cartethyia_a4(), False)
                         time.sleep(0.3)
-                        self.combo_action(self.cartethyia_Eza(), True)
+                        self.combo_action(self.cartethyia_zjEda(), True)
                         time.sleep(0.2)
             return
 
@@ -1085,7 +1086,7 @@ class Cartethyia(BaseCartethyia):
                 if not is_sword_of_divinity_existing:
                     self.combo_action(self.cartethyia_a4(), False)
                 if not is_sword_of_virtue_existing and is_resonance_skill_cartethyia_ready:
-                    self.combo_action(self.cartethyia_Eza(), True)
+                    self.combo_action(self.cartethyia_zjEda(), True)
                 elif not is_sword_of_discord_existing:
                     self.combo_action(self.cartethyia_z(), True)
                     self.combo_action(self.cartethyia_ja(), True)
@@ -1101,7 +1102,7 @@ class Cartethyia(BaseCartethyia):
                 is_resonance_skill_cartethyia_ready = self.is_resonance_skill_cartethyia_ready(img)
                 # 检查E 收剑
                 if is_resonance_skill_cartethyia_ready:
-                    self.combo_action(self.cartethyia_Eza(), True)
+                    self.combo_action(self.cartethyia_zjEda(), True)
                 else:
                     if not is_sword_of_discord_existing:
                         self.combo_action(self.cartethyia_z(), False)

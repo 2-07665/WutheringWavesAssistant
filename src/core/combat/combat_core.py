@@ -3,7 +3,7 @@ import random
 import threading
 import time
 from enum import Enum
-from typing import Sequence
+from typing import Sequence, Optional
 
 import numpy as np
 
@@ -98,9 +98,11 @@ class ResonatorNameEnum(Enum):
     aemeath = "爱弥斯"
     luukherssen = "陆赫斯"
 
+    # v3.2
+    sigrika = "西格莉卡"
+
     # v3.x
     lucilla = "洛瑟菈"
-    sigrika = "西格莉卡"
 
     # 缓存
     __value_map = None
@@ -128,6 +130,26 @@ class ResonatorNameEnum(Enum):
     @classmethod
     def get_enum_by_value(cls, value):
         return cls.get_enum_map().get(value)
+
+    @classmethod
+    def get_enum_by_ocr_text(cls, ocr_text) -> Optional["ResonatorNameEnum"]:
+        """
+        ocr文本匹配角色名，部分角色有生僻字或特殊字符，需要特殊处理
+        :param ocr_text:
+        :return: 枚举或None
+        """
+        if not ocr_text:
+            return None
+        ocr_text = ocr_text.strip()
+        enum_map = cls.get_enum_map()
+        for name_zh, enum_obj in enum_map.items():
+            if name_zh == ocr_text:
+                return enum_obj
+            if 1 <= len(ocr_text) <= 2 and ocr_text.startswith(cls.chisa.value[0]):
+                return cls.chisa
+            if len(ocr_text) >= 3 and ocr_text.startswith(cls.luukherssen.value[0]) and ocr_text.endswith(cls.luukherssen.value[-2:]):
+                return cls.luukherssen
+        return None
 
 
 class BaseChecker:
@@ -873,7 +895,7 @@ class TeamMemberSelector:
                 return None
             logger.debug("切换角色: %s", member)
             self.control_service.toggle_team_member(member)
-            time.sleep(0.15)
+            time.sleep(0.5)
             img = self.img_service.screenshot()
             is_toggled = team_member_checker.check(img)
 
