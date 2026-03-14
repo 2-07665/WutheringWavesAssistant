@@ -205,23 +205,21 @@ def combat_cache(func):
 
         key = (args, tuple(kwargs.items()))
 
-        if args:
-            obj = args[0]
-            if hasattr(obj, '__class__'):
-                cls_name = obj.__class__.__name__  # 实例方法
-            elif isinstance(obj, type):
-                cls_name = obj.__name__  # 类方法
-            else:
-                cls_name = None
-        else:
+        if logger.isEnabledFor(logging.DEBUG):
             cls_name = None
+            if args:
+                obj = args[0]
+                if hasattr(obj, '__class__'):
+                    cls_name = obj.__class__.__name__  # 实例方法
+                elif isinstance(obj, type):
+                    cls_name = obj.__name__  # 类方法
 
-        if key in storage:
             if cls_name:
                 logger.debug(f"{cls_name}.{func.__name__}")
             else:
                 logger.debug(func.__name__)
-        else:
+
+        if key not in storage:
             storage[key] = func(*args, **kwargs)
 
         return storage[key]
