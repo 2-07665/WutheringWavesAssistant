@@ -3,7 +3,8 @@ import time
 
 import numpy as np
 
-from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, LogicEnum, ResonatorNameEnum
+from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, LogicEnum, ResonatorNameEnum, \
+    combat_cache
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -267,7 +268,7 @@ class Cartethyia(BaseCartethyia):
         ["j", 0.05, 1.20],
     ]
 
-    # 进阶轴1
+    # 轴1
     COMBO_SEQ_1 = [
         # 小卡
 
@@ -339,7 +340,7 @@ class Cartethyia(BaseCartethyia):
         ["w", 0.05, 1.20],
     ]
 
-    # 进阶轴2
+    # 轴2
     COMBO_SEQ_2 = [
         # 小卡
         # R
@@ -418,8 +419,8 @@ class Cartethyia(BaseCartethyia):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def cartethyia_a4(self):
-        logger.debug("cartethyia_a4")
         return [
             # 小卡
             # 普攻4a 召唤神权剑
@@ -442,16 +443,16 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.75],
         ]
 
+    @combat_cache
     def a3(self):
-        logger.debug("a3")
         return [
             ["a", 0.05, 0.20],
             ["a", 0.05, 0.20],
             ["a", 0.05, 0.20],
         ]
 
+    @combat_cache
     def cartethyia_a2_start(self):
-        logger.debug("cartethyia_a2_start")
         return [
             # 普攻前两下
             # ["a", 0.05, 0.31],
@@ -463,8 +464,8 @@ class Cartethyia(BaseCartethyia):
             ["a", 0.05, 0.32],
         ]
 
+    @combat_cache
     def cartethyia_a2_end(self):
-        logger.debug("cartethyia_a2_end")
         return [
             # 普攻后两下
             # ["a", 0.05, 0.84],
@@ -478,27 +479,8 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.75],
         ]
 
-    # def cartethyia_a4zEa(self):
-    #     logger.debug("cartethyia_a4zEa")
-    #     return [
-    #         # 小卡
-    #         # 普攻4a
-    #         ["a", 0.05, 0.31],
-    #         ["a", 0.05, 0.67],
-    #         ["a", 0.05, 0.84],
-    #         # ["a", 0.05, 1.20],
-    #         ["a", 0.05, 0.70],
-    #
-    #         ["z", 0.70, 0.50],
-    #
-    #         ["E", 0.05, 1.00],
-    #         # ["a", 0.05, 1.10],
-    #         ["a", 0.05, 0.20],
-    #         ["w", 0.00, 0.90],
-    #     ]
-
+    @combat_cache
     def cartethyia_a4Eza(self):
-        logger.debug("cartethyia_a4Eza")
         return [
             # 小卡
             # 普攻4a
@@ -546,15 +528,15 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.65],
         ]
 
+    @combat_cache
     def cartethyia_E(self):
-        logger.debug("cartethyia_E")
         return [
             # E 召唤人权剑
             ["E", 0.05, 1.00],
         ]
 
+    @combat_cache
     def cartethyia_Ea(self):
-        logger.debug("cartethyia_Ea")
         return [
             # Ea 召唤人权剑 收剑
             # ["E", 0.05, 1.00],
@@ -567,8 +549,8 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.75],
         ]
 
+    @combat_cache
     def cartethyia_zjEda(self):
-        logger.debug("cartethyia_zjEda")
         return [
             # zEa
             # ["z", 0.90, 0.20],
@@ -576,7 +558,7 @@ class Cartethyia(BaseCartethyia):
             ["j", 0.05, 0.05],
             # ["E", 0.05, 0.60],
             ["E", 0.05, 0.10],
-            ["E", 0.05, 0.45],
+            ["E", 0.05, 0.50],
             ["d", 0.05, 0.00],
             # ["a", 0.05, 1.00],
             ["a", 0.05, 0.10],
@@ -584,8 +566,8 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.65],
         ]
 
+    @combat_cache
     def cartethyia_Eza(self):
-        logger.debug("cartethyia_Eza")
         return [
             # Eza
             # ["E", 0.05, 0.60],
@@ -599,8 +581,8 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.65],
         ]
 
+    @combat_cache
     def cartethyia_z(self):
-        logger.debug("cartethyia_z")
         return [
             # 重击 召唤异权剑
             # ["z", 0.90, 0.60],
@@ -608,8 +590,8 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.40],
         ]
 
+    @combat_cache
     def cartethyia_ja(self):
-        logger.debug("cartethyia_ja")
         return [
             # 下落攻击 收剑
             ["j", 0.05, 0.20],
@@ -618,14 +600,14 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.40],
         ]
 
+    @combat_cache
     def cartethyia_R(self):
-        logger.debug("cartethyia_R")
         return [
             ["R", 0.05, 3.70],
         ]
 
+    @combat_cache
     def fleurdelys_a5(self):
-        logger.debug("fleurdelys_a5")
         return [
             # 大卡
             # 普攻5a
@@ -655,8 +637,8 @@ class Cartethyia(BaseCartethyia):
             ["a", 0.05, 0.30],
         ]
 
+    @combat_cache
     def fleurdelys_a2(self):
-        logger.debug("fleurdelys_a2")
         return [
             # 大卡
             # 普攻5a
@@ -686,8 +668,8 @@ class Cartethyia(BaseCartethyia):
             # ["a", 0.05, 0.30],
         ]
 
+    @combat_cache
     def fleurdelys_a3(self):
-        logger.debug("fleurdelys_a3")
         return [
             # 大卡
             # 普攻5a
@@ -716,8 +698,8 @@ class Cartethyia(BaseCartethyia):
             # ["a", 0.05, 0.30],
         ]
 
+    @combat_cache
     def avatar_cartethyia_to_fleurdelys_Ra3(self):
-        logger.debug("avatar_cartethyia_to_fleurdelys_Ra3")
         return [
             # 化身小卡切大卡
             # ["R", 0.05, 0.65],
@@ -746,8 +728,8 @@ class Cartethyia(BaseCartethyia):
             ["a", 0.05, 0.30],
         ]
 
+    @combat_cache
     def fleurdelys_to_avatar_cartethyia_Ra3(self):
-        logger.debug("fleurdelys_to_avatar_cartethyia_Ra3")
         return [
             # 大卡切化身小卡
             # ["R", 0.05, 1.10],
@@ -771,8 +753,8 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.75],
         ]
 
+    @combat_cache
     def fleurdelys_za_a3(self):
-        logger.debug("fleurdelys_za_a3")
         return [
             # 大卡 重击派生
             # za 射箭
@@ -797,8 +779,8 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.85],
         ]
 
+    @combat_cache
     def fleurdelys_ja2(self):
-        logger.debug("fleurdelys_ja2")
         return [
             # 大卡 空中2a
             # ["j", 0.05, 0.80],
@@ -817,8 +799,8 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.85],
         ]
 
+    @combat_cache
     def fleurdelys_ja3(self):
-        logger.debug("fleurdelys_ja3")
         return [
             # 大卡 空中3a
             # ["j", 0.05, 0.80],
@@ -842,8 +824,8 @@ class Cartethyia(BaseCartethyia):
             ["w", 0.00, 0.31],
         ]
 
+    @combat_cache
     def fleurdelys_EaaEaaa(self):
-        logger.debug("fleurdelys_EaaEaaa")
         return [
             # 大卡
             # EaaEaaa
@@ -860,8 +842,8 @@ class Cartethyia(BaseCartethyia):
             # ["a", 0.05, 1.20],
             ["a", 0.05, 0.25],
             ["a", 0.05, 0.25],
-            ["a", 0.05, 0.45],
-            ["E", 0.05, 0.10],
+            ["a", 0.05, 0.30],
+            ["E", 0.05, 0.30],
 
             # ["E", 0.05, 1.65],
             ["E", 0.05, 0.30],
@@ -887,11 +869,11 @@ class Cartethyia(BaseCartethyia):
             ["a", 0.05, 0.30],
         ]
 
+    @combat_cache
     def fleurdelys_EaaE(self):
-        logger.debug("fleurdelys_EaaE")
         return [
             # 大卡
-            # EaaEaaa
+            # EaaE
             # ["E", 0.05, 0.93],
             ["E", 0.05, 0.13],
             ["E", 0.05, 0.20],
@@ -905,23 +887,24 @@ class Cartethyia(BaseCartethyia):
             # ["a", 0.05, 1.20],
             ["a", 0.05, 0.25],
             ["a", 0.05, 0.25],
-            ["a", 0.05, 0.45],
-            ["E", 0.05, 0.10],
+            ["a", 0.05, 0.30],
+            ["E", 0.05, 0.30],
 
             # ["E", 0.05, 1.65],
             ["E", 0.05, 0.10],
             ["E", 0.05, 0.10],
-            ["w", 0.00, 1.50],
+            ["a", 0.05, 1.45],
         ]
 
-    def fleurdelys_R_blade_of_howling_squall(self):
-        logger.debug("R")
+    @combat_cache
+    def fleurdelys_R(self):
         return [
             # ["R", 0.05, 3.60],
             ["R", 0.05, 0.20],
             ["R", 0.05, 3.35],
         ]
 
+    @combat_cache
     def Q(self):
         logger.debug("Q")
         return [
@@ -929,12 +912,11 @@ class Cartethyia(BaseCartethyia):
             ["Q", 0.01, 0.00],
         ]
 
-    def R(self):
-        logger.debug("R")
+    @combat_cache
+    def avatar_R(self):
+        # 大小卡切换，大招期间
         return [
-            # ["R", 0.05, 5.20],
             ["R", 0.05, 0.05],
-            ["w", 0.00, 5.10],
         ]
 
     def full_combo(self):
@@ -978,7 +960,7 @@ class Cartethyia(BaseCartethyia):
         # 化身·芙露德莉斯 狂澜，分割天地
         if is_resonance_liberation_blade_of_howling_squall_ready:
             # 有大开大
-            self.combo_action(self.fleurdelys_R_blade_of_howling_squall(), True)
+            self.combo_action(self.fleurdelys_R(), True)
             img = self.img_service.screenshot()
             boss_hp = self.boss_hp(img)
             if boss_hp <= 0.01:
@@ -1034,13 +1016,12 @@ class Cartethyia(BaseCartethyia):
                     if boss_hp <= 0.01:
                         return
                 else:
-                    self.combo_action(self.R(), False)
+                    self.combo_action(self.avatar_R(), True)
                 self.combo_action(self.fleurdelys_EaaE(), False)
             elif is_resonance_skill_fleurdelys_ready:
                 self.combo_action(self.fleurdelys_EaaE(), False)
             else:
                 if boss_hp <= 0.01:
-                    # self.combo_action(self.fleurdelys_a2(), False)
                     self.combo_action(self.fleurdelys_a3(), False)
                     return
                 if self.random_float() < 0.33:
@@ -1058,7 +1039,7 @@ class Cartethyia(BaseCartethyia):
 
             # 此剑，斩灭诸恶
             if is_resonance_liberation_blade_of_howling_squall_ready:
-                self.combo_action(self.fleurdelys_R_blade_of_howling_squall(), True)
+                self.combo_action(self.fleurdelys_R(), True)
                 # 若小卡E转好了再打一个 E合轴 或 三剑下劈
                 img = self.img_service.screenshot()
                 boss_hp = self.boss_hp(img)
@@ -1138,7 +1119,7 @@ class Cartethyia(BaseCartethyia):
                 self.combo_action(self.fleurdelys_ja3(), False)
             if self.random_float() < 0.5:
                 # 切回小卡，保留显化
-                self.combo_action(self.R(), False)
+                self.combo_action(self.avatar_R(), True)
             return
 
         # 兜底

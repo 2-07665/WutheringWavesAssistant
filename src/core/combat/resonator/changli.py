@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum
+from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum, combat_cache
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -145,8 +145,8 @@ class Changli(BaseChangli):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def Ea(self):
-        logger.debug("Ea")
         return [
             # 共鸣技能 Ea 一离火
             # ["E", 0.05, 1.25],
@@ -163,15 +163,15 @@ class Changli(BaseChangli):
             ["a", 0.05, 0.30],
         ]
 
+    @combat_cache
     def E(self):
-        logger.debug("E")
         return [
             # 共鸣技能 E
             ["E", 0.05, 1.25],
         ]
 
+    @combat_cache
     def a2(self):
-        logger.debug("a2")
         return [
             # 普攻 2a
             ["a", 0.05, 0.31],
@@ -197,8 +197,8 @@ class Changli(BaseChangli):
     #         ["w", 0.05, 0.75],
     #     ]
 
+    @combat_cache
     def a3(self):
-        logger.debug("a3")
         return [
             # 普攻 5a 一离火
             # ["a", 0.05, 0.31],
@@ -216,8 +216,8 @@ class Changli(BaseChangli):
             ["w", 0.05, 0.75],
         ]
 
+    @combat_cache
     def a(self):
-        logger.debug("a")
         return [
             ["a", 0.05, 0.31],
         ]
@@ -230,16 +230,16 @@ class Changli(BaseChangli):
     #         ["z", 1.90, 1.00],
     #     ]
 
+    @combat_cache
     def Rz(self):
-        logger.debug("Rz")
         return [
             # Rz
             ["R", 0.05, 1.65],
             ["z", 2.00, 1.00],
         ]
 
+    @combat_cache
     def zR(self):
-        logger.debug("zR")
         return [
             # zR
             # ["z", 0.60, 1.10],
@@ -254,23 +254,23 @@ class Changli(BaseChangli):
             ["R", 0.05, 1.65],
         ]
 
+    @combat_cache
     def z(self):
-        logger.debug("z")
         return [
             # z
             ["z", 0.70, 1.10],
         ]
 
+    @combat_cache
     def az(self):
-        logger.debug("az")
         return [
             # az
             ["a", 0.05, 0.31],
             ["z", 0.70, 1.10],
         ]
 
+    @combat_cache
     def Qa3(self):
-        logger.debug("Qa3")
         return [
             # 声骸技能，梦魇摩托
             ["Q", 0.05, 0.30],
@@ -279,15 +279,15 @@ class Changli(BaseChangli):
             ["a", 0.05, 1.60],
         ]
 
+    @combat_cache
     def Q(self):
-        logger.debug("Q")
         return [
             # 声骸技能，普通摩托
             ["Q", 0.05, 0.30],
         ]
 
+    @combat_cache
     def R(self):
-        logger.debug("R")
         return [
             ["R", 0.05, 1.65],
         ]

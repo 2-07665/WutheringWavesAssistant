@@ -4,7 +4,7 @@ import time
 import numpy as np
 
 from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, LogicEnum, \
-    ResonatorNameEnum
+    ResonatorNameEnum, combat_cache
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -123,8 +123,8 @@ class Sanhua(BaseSanhua):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def a3(self):
-        logger.debug("a3")
         return [
             # 普攻 随便打几下
             ["a", 0.05, 0.30],
@@ -132,29 +132,29 @@ class Sanhua(BaseSanhua):
             ["a", 0.05, 0.35],
         ]
 
+    @combat_cache
     def z(self):
-        logger.debug("z")
         return [
             ["z", 0.915, 1.30],
         ]
 
+    @combat_cache
     def Ez(self):
-        logger.debug("Ez")
         return [
             # Ez
             ["E", 0.05, 0.20],
             ["z", 0.85, 1.56],
         ]
 
+    @combat_cache
     def Rz(self):
-        logger.debug("Rz")
         return [
             ["R", 0.05, 0.05],
             ["z", 1.85, 1.43],
         ]
 
+    @combat_cache
     def ERz(self):
-        logger.debug("ERz")
         return [
             # ERz
             ["E", 0.05, 0.39],
@@ -163,15 +163,15 @@ class Sanhua(BaseSanhua):
             ["z", 1.90, 1.43],  # 稍微按久一点
         ]
 
+    @combat_cache
     def Q(self):
-        logger.debug("Q")
         return [
             # 声骸技能
             ["Q", 0.05, 1.45],
         ]
 
+    @combat_cache
     def EQ(self):
-        logger.debug("EQ")
         return [
             ["E", 0.05, 0.39],
             ["Q", 0.05, 1.45],

@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum
+from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum, combat_cache
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -276,8 +276,8 @@ class Ciaccona(BaseCiaccona):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def a4(self):
-        logger.debug("a4")
         return [
             # 普攻4a
             ["a", 0.05, 0.24],
@@ -298,8 +298,8 @@ class Ciaccona(BaseCiaccona):
             ["w", 0.00, 1.00],
         ]
 
+    @combat_cache
     def a_intro(self):
-        logger.debug("a_intro")
         return [
             # 普攻1.3秒，覆盖变奏时间
             ["a", 0.05, 0.25],
@@ -309,8 +309,8 @@ class Ciaccona(BaseCiaccona):
             ["a", 0.05, 0.20],
         ]
 
+    @combat_cache
     def a2_end(self):
-        logger.debug("a2_end")
         return [
             # 普攻4a的后两段
             # ["a", 0.05, 0.24],
@@ -334,23 +334,23 @@ class Ciaccona(BaseCiaccona):
     #         ["z", 0.82, 0.05],
     #     ]
 
+    @combat_cache
     def z_musical_essence_3(self):
-        logger.debug("z_musical_essence_3")
         return [
             # 3能量 重击 加一层风蚀
             ["z", 1.54, 0.20],
         ]
 
+    @combat_cache
     def E(self):
-        logger.debug("E")
         return [
             # ["E", 0.05, 0.60],
             ["E", 0.05, 0.15],
             ["E", 0.05, 0.40],
         ]
 
+    @combat_cache
     def E3a(self):
-        logger.debug("E3a")
         return [
             # E3a E后从普攻第二段开始打 E加一层风蚀
             # ["E", 0.05, 0.50],
@@ -373,8 +373,8 @@ class Ciaccona(BaseCiaccona):
             ["w", 0.00, 1.00],
         ]
 
+    @combat_cache
     def jEz(self):
-        logger.debug("jEz")
         return [
             # 空中E 3音律重击
             ["j", 0.05, 0.12],
@@ -382,8 +382,8 @@ class Ciaccona(BaseCiaccona):
             ["z", 1.30, 0.40],
         ]
 
+    @combat_cache
     def jEaaa(self):
-        logger.debug("jEaaa")
         return [
             ["j", 0.05, 0.12],
 
@@ -401,8 +401,8 @@ class Ciaccona(BaseCiaccona):
             ["w", 0.00, 1.00],
         ]
 
+    @combat_cache
     def jEaaajaaa(self):
-        logger.debug("jEaaajaaa")
         return [
             ["j", 0.05, 0.12],
 
@@ -437,8 +437,8 @@ class Ciaccona(BaseCiaccona):
             ["w", 0.00, 1.00],
         ]
 
+    @combat_cache
     def jaaa(self):
-        logger.debug("jaaa")
         return [
             # jaaa
             ["j", 0.05, 0.12],
@@ -457,15 +457,15 @@ class Ciaccona(BaseCiaccona):
             ["w", 0.00, 1.00],
         ]
 
+    @combat_cache
     def Q(self):
-        logger.debug("Q")
         return [
             # 声骸技能
             ["Q", 0.05, 0.00],
         ]
 
+    @combat_cache
     def R_aero_erosion(self):
-        logger.debug("R_aero_erosion")
         return [
             # R 风蚀
             # ["R", 0.05, 3.67],
@@ -473,8 +473,8 @@ class Ciaccona(BaseCiaccona):
             ["R", 0.05, 3.42],
         ]
 
+    @combat_cache
     def R_spectro_frazzle(self):
-        logger.debug("R_spectro_frazzle")
         return [
             # R 光噪
             # ["R", 0.05, 3.67],

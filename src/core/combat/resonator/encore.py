@@ -3,7 +3,8 @@ import time
 
 import numpy as np
 
-from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, LogicEnum, ResonatorNameEnum
+from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, LogicEnum, ResonatorNameEnum, \
+    combat_cache
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -137,15 +138,15 @@ class Encore(BaseEncore):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def E(self):
-        logger.debug("E")
         return [
             # E
             ["E", 0.05, 1.90],
         ]
 
+    @combat_cache
     def Ea(self):
-        logger.debug("Ea")
         return [
             # Ea
             # ["E", 0.05, 1.90],  # 等待时间太长，实战容易发呆，拆分
@@ -166,8 +167,8 @@ class Encore(BaseEncore):
             ["a", 0.05, 0.15],
         ]
 
+    @combat_cache
     def a5(self):
-        logger.debug("a5")
         return [
             # 普攻5a
             # ["a", 0.05, 0.30],
@@ -190,8 +191,8 @@ class Encore(BaseEncore):
             ["a", 0.05, 1.22],
         ]
 
+    @combat_cache
     def a3(self):
-        logger.debug("a3")
         return [
             # 3a，固定频率连点数下，用于脱离空中状态，非普攻连段
             # ["a", 0.05, 0.30],  # 拆分
@@ -212,8 +213,8 @@ class Encore(BaseEncore):
     #         ["a", 0.05, 0.40],
     #     ]
 
+    @combat_cache
     def a2(self):
-        logger.debug("a2")
         return [
             # 普攻5a的后两下
             ["a", 0.05, 0.20],
@@ -225,15 +226,15 @@ class Encore(BaseEncore):
             ["a", 0.05, 1.22],
         ]
 
+    @combat_cache
     def R(self):
-        logger.debug("R")
         return [
             # R
             ["R", 0.05, 2.63],
         ]
 
+    @combat_cache
     def Ea11E(self):
-        logger.debug("Ea11E")
         return [
             # R E普攻E，普攻连点打满一套的时间
             ["E", 0.05, 0.28],
@@ -254,15 +255,15 @@ class Encore(BaseEncore):
             ["w", 0.00, 0.08],
         ]
 
+    @combat_cache
     def z(self):
-        logger.debug("z")
         return [
             # 重击
             ["z", 0.70, 3.00],
         ]
 
+    @combat_cache
     def Qa3(self):
-        logger.debug("Qa3")
         return [
             # 声骸技能，梦魇摩托
             ["Q", 0.05, 0.30],
@@ -272,8 +273,8 @@ class Encore(BaseEncore):
             ["a", 0.05, 1.60],
         ]
 
+    @combat_cache
     def Q(self):
-        logger.debug("Q")
         return [
             # 声骸技能，普通摩托
             ["Q", 0.05, 0.30],

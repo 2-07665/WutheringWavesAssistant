@@ -3,7 +3,8 @@ import time
 
 import numpy as np
 
-from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum, LogicEnum
+from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum, LogicEnum, \
+    combat_cache
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -242,14 +243,14 @@ class Lynae(BaseLynae):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def E(self):
-        logger.debug("E")
         return [
             ["E", 0.05, 0.88],
         ]
 
+    @combat_cache
     def optical_sampling_stage_a3(self):
-        logger.debug("optical_sampling_stage_a3")
         return [
             # 3a
             ["a", 0.05, 0.33],
@@ -265,8 +266,8 @@ class Lynae(BaseLynae):
             ["a", 0.05, 0.32],
         ]
 
+    @combat_cache
     def optical_sampling_stage_E2a(self):
-        logger.debug("optical_sampling_stage_E2a")
         return [
             # ["E", 0.05, 0.88],
             ["E", 0.05, 0.20],
@@ -285,15 +286,15 @@ class Lynae(BaseLynae):
             ["a", 0.05, 0.32],
         ]
 
+    @combat_cache
     def a(self):
-        logger.debug("a")
         return [
             # 2a
             ["a", 0.05, 0.33],
         ]
 
+    @combat_cache
     def a2(self):
-        logger.debug("a2")
         return [
             # 2a
             ["a", 0.05, 0.33],
@@ -303,26 +304,26 @@ class Lynae(BaseLynae):
             ["a", 0.05, 0.15],  # optical_sampling_stage_a2
         ]
 
+    @combat_cache
     def optical_sampling_stage_z(self):
-        logger.debug("optical_sampling_stage_z")
         return [
             ["z", 2.26, 0.70],
         ]
 
+    @combat_cache
     def kaleidoscopic_parade_z(self):
-        logger.debug("kaleidoscopic_parade_z")
         return [
             ["z", 1.50, 0.10],
         ]
 
+    @combat_cache
     def kaleidoscopic_parade_j(self):
-        logger.debug("kaleidoscopic_parade_j")
         return [
             ["j", 0.05, 0.50],
         ]
 
+    @combat_cache
     def kaleidoscopic_parade_3jza(self):
-        logger.debug("kaleidoscopic_parade_3jza")
         return [
             ["j", 0.05, 0.50],
             ["j", 0.05, 0.50],
@@ -334,8 +335,8 @@ class Lynae(BaseLynae):
             ["w", 0.00, 0.77],
         ]
 
+    @combat_cache
     def kaleidoscopic_parade_2jzja(self):
-        logger.debug("kaleidoscopic_parade_2jzja")
         return [
             ["j", 0.05, 0.50],
             ["j", 0.05, 0.50],
@@ -347,8 +348,8 @@ class Lynae(BaseLynae):
             ["w", 0.00, 0.77],
         ]
 
+    @combat_cache
     def kaleidoscopic_parade_a5(self):
-        logger.debug("kaleidoscopic_parade_a5")
         return [
             # ["a", 0.05, 0.45],
             ["a", 0.05, 0.20],
@@ -374,8 +375,8 @@ class Lynae(BaseLynae):
             ["w", 0.00, 0.85],  # 爆炸
         ]
 
+    @combat_cache
     def kaleidoscopic_parade_E4a(self):
-        logger.debug("kaleidoscopic_parade_E4a")
         return [
             ["E", 0.05, 0.88],
             # ["a", 0.05, 0.45],
@@ -400,22 +401,22 @@ class Lynae(BaseLynae):
             ["w", 0.00, 0.85],  # 爆炸
         ]
 
+    @combat_cache
     def aQ(self):
-        logger.debug("aQ")
         return [
             ["a", 0.05, 0.10],
             ["a", 0.05, 0.10],
             ["Q", 0.05, 0.10],
         ]
 
+    @combat_cache
     def Q(self):
-        logger.debug("Q")
         return [
             ["Q", 0.05, 0.10],
         ]
 
+    @combat_cache
     def R(self):
-        logger.debug("R")
         return [
             ["R", 0.05, 4.70],
         ]

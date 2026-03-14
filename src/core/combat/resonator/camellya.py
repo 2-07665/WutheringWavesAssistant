@@ -4,7 +4,7 @@ import time
 import numpy as np
 
 from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, LogicEnum, ResonatorNameEnum, \
-    ScenarioEnum
+    ScenarioEnum, combat_cache
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -188,8 +188,8 @@ class Camellya(BaseCamellya):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def a4(self):
-        logger.debug("a4")
         return [
             # 白椿 普攻4a
             ["a", 0.05, 0.29],
@@ -206,8 +206,8 @@ class Camellya(BaseCamellya):
             ["a", 0.05, 2.00],
         ]
 
+    @combat_cache
     def a3(self):
-        logger.debug("a3")
         return [
             # 随便打几下普攻，入场防变奏
             ["a", 0.05, 0.20],
@@ -215,9 +215,9 @@ class Camellya(BaseCamellya):
             ["a", 0.05, 0.20],
         ]
 
+    @combat_cache
     def waz(self):
         # 从a2继续往后打
-        logger.debug("waz")
         return [
             # 白椿 普攻3az 转圈派生
             # ["a", 0.05, 0.29],
@@ -233,8 +233,8 @@ class Camellya(BaseCamellya):
             ["z", 3.50, 0.41],
         ]
 
+    @combat_cache
     def a3z(self):
-        logger.debug("a3z")
         return [
             # 白椿 普攻3az 转圈派生
             ["a", 0.05, 0.29],
@@ -251,15 +251,15 @@ class Camellya(BaseCamellya):
             ["z", 3.50, 0.41],
         ]
 
+    @combat_cache
     def z(self):
-        logger.debug("z")
         return [
             # 白椿 重击 转圈派生
             ["z", 4.78, 0.80],
         ]
 
+    @combat_cache
     def EQdzjE(self):
-        logger.debug("EQdzjE")
         return [
             # 白椿Q闪取消转红椿 重击转圈 三连鞭
             ["E", 0.05, 0.27],
@@ -277,8 +277,8 @@ class Camellya(BaseCamellya):
             ["w", 0.05, 1.20],
         ]
 
+    @combat_cache
     def QdEj(self):
-        logger.debug("QdEj")
         return [
             # 红椿Q闪取消转白椿 落地
             ["Q", 0.05, 0.20],
@@ -290,8 +290,8 @@ class Camellya(BaseCamellya):
             ["w", 0.00, 1.00],
         ]
 
+    @combat_cache
     def Eaazja(self):
-        logger.debug("Eaazja")
         return [
             # 白椿转红椿 普攻重击转圈 下砸落地 消耗【红椿·蕊】
             # ["E", 0.05, 1.25],  # 拆分
@@ -323,8 +323,8 @@ class Camellya(BaseCamellya):
             ["a", 0.05, 1.00],
         ]
 
+    @combat_cache
     def aazja(self):
-        logger.debug("aazja")
         return [
             # # 白椿转红椿 普攻重击转圈 下砸落地 消耗【红椿·蕊】
             # # ["E", 0.05, 1.25],  # 拆分
@@ -356,8 +356,8 @@ class Camellya(BaseCamellya):
             ["a", 0.05, 1.00],
         ]
 
+    @combat_cache
     def Ezja(self):
-        logger.debug("Ezja")
         return [
             # 白椿转红椿 重击转圈 下砸落地 消耗【红椿·蕊】
             # ["E", 0.05, 0.50],  # 拆分
@@ -378,9 +378,9 @@ class Camellya(BaseCamellya):
             ["a", 0.05, 1.00],
         ]
 
+    @combat_cache
     def zja(self):
         # 相比Ezja少一步变红椿
-        logger.debug("zja")
         return [
             # 红椿 重击转圈 下砸落地 消耗【红椿·蕊】
             # ["E", 0.05, 0.50],
@@ -398,9 +398,9 @@ class Camellya(BaseCamellya):
             ["a", 0.05, 1.00],
         ]
 
+    @combat_cache
     def ja(self):
         # 落地 退出红椿
-        logger.debug("ja")
         return [
             # 红椿转白椿
             # ["j", 0.05, 1.01],  # 拆分
@@ -412,8 +412,8 @@ class Camellya(BaseCamellya):
             ["a", 0.05, 1.20],
         ]
 
+    @combat_cache
     def ephemeral_a(self):
-        logger.debug("ephemeral_a")
         return [
             # 一日花 Ea 下砸落地
             # ["E", 0.05, 1.40],  # 拆分
@@ -428,15 +428,15 @@ class Camellya(BaseCamellya):
             ["w", 0.00, 0.90],
         ]
 
+    @combat_cache
     def Q(self):
-        logger.debug("Q")
         return [
             # 声骸技能
             ["Q", 0.05, 0.00],
         ]
 
+    @combat_cache
     def R(self):
-        logger.debug("R")
         return [
             # ["R", 0.05, 4.06],  # 拆分
             ["R", 0.05, 0.20],
@@ -445,9 +445,9 @@ class Camellya(BaseCamellya):
             ["R", 0.05, 2.94],
         ]
 
+    @combat_cache
     def RaRa(self):
         # 需要等R结束后放一日花，中途穿插普攻
-        logger.debug("RaRa")
         return [
             # ["R", 0.05, 4.06],  # 拆分
             ["R", 0.05, 0.20],

@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum
+from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum, combat_cache
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -124,8 +124,8 @@ class Verina(BaseVerina):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def a3EQ(self):
-        logger.debug("a3EQ")
         return [
             ["a", 0.05, 0.35],
             ["a", 0.05, 0.32],
@@ -135,8 +135,8 @@ class Verina(BaseVerina):
             ["Q", 0.05, 0.10],
         ]
 
+    @combat_cache
     def ja3(self):
-        logger.debug("ja3")
         return [
             ["j", 0.05, 0.10],
             ["a", 0.05, 0.20],
@@ -148,8 +148,8 @@ class Verina(BaseVerina):
             ["a", 0.05, 0.80],
         ]
 
+    # @combat_cache
     # def a5(self):
-    #     logger.debug("a5")
     #     return [
     #         # 普攻5a
     #         ["a", 0.05, 0.40],
@@ -165,8 +165,8 @@ class Verina(BaseVerina):
     #         ["a", 0.05, 0.90],
     #     ]
 
+    @combat_cache
     def a3(self):
-        logger.debug("a3")
         return [
             # 普攻a5的后三下
             # ["a", 0.05, 0.40],
@@ -182,15 +182,15 @@ class Verina(BaseVerina):
             ["a", 0.05, 0.90],
         ]
 
+    @combat_cache
     def R(self):
-        logger.debug("R")
         return [
             # R
             ["R", 0.05, 2.63],
         ]
 
+    @combat_cache
     def EQR(self):
-        logger.debug("EQR")
         return [
             # EQR
             ["E", 0.05, 0.10],

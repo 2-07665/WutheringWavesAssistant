@@ -3,6 +3,7 @@ import random
 import threading
 import time
 from enum import Enum
+from functools import wraps
 from typing import Sequence, Optional
 
 import numpy as np
@@ -102,6 +103,10 @@ class ResonatorNameEnum(Enum):
     sigrika = "西格莉卡"
 
     # v3.x
+    hiyuki = "绯雪"
+    denia = "达妮娅"
+    lucy = "露西"
+    rebecca = "丽贝卡"
     lucilla = "洛瑟菈"
 
     # 缓存
@@ -184,6 +189,44 @@ class AlignEnum(Enum):
     CENTER = "center"  # 中心对齐，如编队
     CENTER_LEFT = "center_left"  # 垂直居中，左对齐
     CENTER_RIGHT = "center_right"  # 垂直居中，右对齐
+
+
+def combat_cache(func):
+    """
+    仅用于缓存连招
+    :param func:
+    :return:
+    """
+
+    storage = {}
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        key = (args, tuple(kwargs.items()))
+
+        if args:
+            obj = args[0]
+            if hasattr(obj, '__class__'):
+                cls_name = obj.__class__.__name__  # 实例方法
+            elif isinstance(obj, type):
+                cls_name = obj.__name__  # 类方法
+            else:
+                cls_name = None
+        else:
+            cls_name = None
+
+        if key in storage:
+            if cls_name:
+                logger.debug(f"{cls_name}.{func.__name__}")
+            else:
+                logger.debug(func.__name__)
+        else:
+            storage[key] = func(*args, **kwargs)
+
+        return storage[key]
+
+    return wrapper
 
 
 class ResolutionEnum(Enum):

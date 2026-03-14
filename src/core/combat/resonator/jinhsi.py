@@ -3,7 +3,8 @@ import time
 
 import numpy as np
 
-from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, LogicEnum, ResonatorNameEnum
+from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, LogicEnum, ResonatorNameEnum, \
+    combat_cache
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -184,9 +185,9 @@ class Jinhsi(BaseJinhsi):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def a4(self):
         """ 普攻打出E2 """
-        logger.debug("a4")
         return [
             ["a", 0.05, 0.45],
             ["a", 0.05, 0.45],
@@ -202,18 +203,18 @@ class Jinhsi(BaseJinhsi):
             ["w", 0.00, 0.20],
         ]
 
+    @combat_cache
     def a2(self):
         """ 普攻，变奏速喷前置动作，触发下发攻击 """
-        logger.debug("a2")
         return [
             ["a", 0.05, 0.10],
             ["a", 0.05, 0.10],
         ]
 
+    @combat_cache
     def E2_full_combo_E4(self):
         """ E2起手的一整套 """
         # 这套容易触发闪避断招，伤害也偏低，但打的快
-        logger.debug("E2_full_combo_E4")
         return [
             ["E", 0.05, 0.05],
             ["d", 0.05, 0.30],
@@ -254,10 +255,10 @@ class Jinhsi(BaseJinhsi):
             # ["w", 0.00, 2.50],
         ]
 
+    @combat_cache
     def E2_full_combo_E3E4(self):
         """ E2起手的一整套 """
         # 这套不容易触发闪避，伤害高一些，但打的慢一些
-        logger.debug("E2_full_combo_E3E4")
         return [
             ["E", 0.05, 0.05],
             ["d", 0.05, 0.30],
@@ -291,9 +292,9 @@ class Jinhsi(BaseJinhsi):
             ["w", 0.00, 2.50],
         ]
 
+    @combat_cache
     def E2_intro_full_combo(self):
         """ E2 变奏速喷 120帧限定技 """
-        logger.debug("E2_intro_full_combo")
         return [
             ["j", 0.002, 0.005],
             ["a", 0.002, 0.005],
@@ -301,9 +302,9 @@ class Jinhsi(BaseJinhsi):
             ["E", 0.002, 0.005],
         ]
 
+    @combat_cache
     def E3_full_combo(self):
         """ E3起手的一整套 """
-        logger.debug("E3_full_combo")
         return [
             # ["a", 0.05, 0.45],  # 等待时间太长，拆分
             # ["a", 0.05, 0.55],
@@ -330,24 +331,24 @@ class Jinhsi(BaseJinhsi):
             ["w", 0.00, 2.50],
         ]
 
+    @combat_cache
     def E(self):
         """ 只打E，E4/E2使用 """
-        logger.debug("EE")
         return [
             # 变奏入场或在空中，容易出下落攻击，只打E
             ["E", 0.05, 0.10],
             ["E", 0.05, 0.10],
         ]
 
+    @combat_cache
     def Q(self):
-        logger.debug("Q")
         return [
             # 声骸技能
             ["Q", 0.05, 0.00],
         ]
 
+    @combat_cache
     def R(self):
-        logger.debug("R")
         return [
             ["R", 0.05, 2.00],
         ]

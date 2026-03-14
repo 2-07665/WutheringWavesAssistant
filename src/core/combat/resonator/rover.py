@@ -1,6 +1,6 @@
 import logging
 
-from src.core.combat.combat_core import BaseResonator, CharClassEnum, ResonatorNameEnum
+from src.core.combat.combat_core import BaseResonator, CharClassEnum, ResonatorNameEnum, combat_cache
 from src.core.interface import ControlService, ImgService
 
 logger = logging.getLogger(__name__)
@@ -36,8 +36,8 @@ class Rover(BaseRover):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def a4(self):
-        logger.debug("a4")
         return [
             ["a", 0.05, 0.30],
             ["a", 0.05, 0.30],
@@ -45,42 +45,42 @@ class Rover(BaseRover):
             ["a", 0.05, 0.30],
         ]
 
+    @combat_cache
     def a2(self):
-        logger.debug("a2")
         return [
             ["a", 0.05, 0.30],
             ["a", 0.05, 0.30],
         ]
 
+    @combat_cache
     def Eaa(self):
-        logger.debug("Eaa")
         return [
             ["E", 0.05, 0.50],
             ["a", 0.05, 0.30],
             ["a", 0.05, 0.30],
         ]
 
+    @combat_cache
     def E(self):
-        logger.debug("E")
         return [
             # 共鸣技能 E
             ["E", 0.05, 0.50],
         ]
 
+    @combat_cache
     def z(self):
-        logger.debug("z")
         return [
             ["z", 0.50, 0.50],
         ]
 
+    @combat_cache
     def Q(self):
-        logger.debug("Q")
         return [
             ["Q", 0.05, 0.50],
         ]
 
+    @combat_cache
     def R(self):
-        logger.debug("R")
         return [
             ["R", 0.05, 0.50],
         ]

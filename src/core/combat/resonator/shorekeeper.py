@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum
+from src.core.combat.combat_core import ColorChecker, BaseResonator, CharClassEnum, ResonatorNameEnum, combat_cache
 from src.core.exceptions import StopError
 from src.core.interface import ControlService, ImgService
 
@@ -152,14 +152,14 @@ class Shorekeeper(BaseShorekeeper):
     def __init__(self, control_service: ControlService, img_service: ImgService):
         super().__init__(control_service, img_service)
 
+    @combat_cache
     def E(self):
-        logger.debug("E")
         return [
             ["E", 0.05, 0.10],
         ]
 
+    @combat_cache
     def zE(self):
-        logger.debug("zE")
         return [
             ["z", 0.50, 0.30],
             ["E", 0.01, 0.10],
@@ -167,8 +167,8 @@ class Shorekeeper(BaseShorekeeper):
             ["a", 0.05, 0.05],  # 多一个普攻打断z防止一直飞
         ]
 
+    @combat_cache
     def Eja(self):
-        logger.debug("Eja")
         return [
             ["E", 0.01, 0.10],
             # 清空能量
@@ -176,8 +176,8 @@ class Shorekeeper(BaseShorekeeper):
             ["a", 0.05, 0.10],
         ]
 
+    @combat_cache
     def ja(self):
-        logger.debug("ja")
         return [
             # 清空能量
             ["j", 0.05, 0.05],
@@ -185,8 +185,8 @@ class Shorekeeper(BaseShorekeeper):
             ["w", 0.00, 0.17],
         ]
 
+    @combat_cache
     def zaEja(self):
-        logger.debug("zaEja")
         return [
             # 进入蝴蝶 有连击则四格能量起手，无连击三格能量起手（重击会先a一下变四格能量）
             ["z", 0.50, 0.30],
@@ -202,6 +202,7 @@ class Shorekeeper(BaseShorekeeper):
             ["w", 0.00, 0.55],
         ]
 
+    # @combat_cache
     # def a3Eaz(self):
     #     logger.debug("a3Eaz")
     #     return [
@@ -222,8 +223,8 @@ class Shorekeeper(BaseShorekeeper):
     #         ["a", 0.05, 0.05],  # 多一个普攻打断z防止一直飞
     #     ]
 
+    @combat_cache
     def a3Ea(self):
-        logger.debug("a3Ea")
         return [
             # 3a E az
             ["a", 0.05, 0.31],
@@ -240,8 +241,8 @@ class Shorekeeper(BaseShorekeeper):
             ["a", 0.05, 0.35],
         ]
 
+    @combat_cache
     def a2(self):
-        logger.debug("a2")
         return [
             # 2a
             ["a", 0.05, 0.31],
@@ -250,8 +251,8 @@ class Shorekeeper(BaseShorekeeper):
             ["a", 0.05, 0.20],
         ]
 
+    @combat_cache
     def a3(self):
-        logger.debug("a3")
         return [
             # 3a
             ["a", 0.05, 0.31],
@@ -263,8 +264,8 @@ class Shorekeeper(BaseShorekeeper):
             ["a", 0.05, 0.15],
         ]
 
+    @combat_cache
     def za(self):
-        logger.debug("za")
         return [
             # 清空能量
             ## 常规重击
@@ -274,14 +275,14 @@ class Shorekeeper(BaseShorekeeper):
             ["a", 0.05, 0.05],  # 多一个普攻打断z防止一直飞
         ]
 
+    @combat_cache
     def Q(self):
-        logger.debug("Q")
         return [
             ["Q", 0.05, 0.10],
         ]
 
+    @combat_cache
     def R(self):
-        logger.debug("R")
         return [
             ["R", 0.05, 3.42],
         ]
