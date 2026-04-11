@@ -516,7 +516,7 @@ class Lynae(BaseLynae):
             is_basic_attack_polychrome_leap_ready = self.is_basic_attack_polychrome_leap_ready(img)
             # 流光能量满，三跳下砸
             if is_max_lumiflow:
-                self.combo_action(self.kaleidoscopic_parade_2jzja(), False)
+                self.combo_action(self.kaleidoscopic_parade_2jzja(), True)
                 return
             if not is_basic_attack_polychrome_leap_ready:
                 return
@@ -543,10 +543,10 @@ class Lynae(BaseLynae):
             time.sleep(0.5 - 0.2)
             # 流光能量满 或 流光能量不足1/3，下砸结束
             if is_max_lumiflow or not is_basic_attack_polychrome_leap_ready:
-                self.combo_action(self.aQ(), False)
+                self.combo_action(self.aQ(), True)
                 return
             self.combo_action(self.kaleidoscopic_parade_j(), True)
-            self.combo_action(self.aQ(), False)
+            self.combo_action(self.aQ(), True)
             return
 
         # 兜底
