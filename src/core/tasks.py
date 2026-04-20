@@ -12,11 +12,11 @@ from typing import Iterable, Any, TypeVar, Callable, Mapping, Optional
 import psutil
 import win32gui
 
-from core.geometry import AnchorPoint, Align
 from src.config import logging_config
 from src.config.gui_config import ParamConfig
 from src.core.contexts import Context
 from src.core.exceptions import ScreenshotError
+from src.core.geometry import AnchorPoint, Align
 from src.core.interface import ImgService, OCRService, ControlService, PageEventService, WindowService
 from src.core.workflow import TaskSpec, IPCManager, NodeContext
 from src.util import hwnd_util, keymouse_util, file_util
