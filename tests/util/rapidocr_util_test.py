@@ -7,18 +7,6 @@ import numpy as np
 import onnxruntime
 from rapidocr import RapidOCR
 
-from importlib.metadata import version
-from packaging.version import Version
-
-try:
-    _rapidocr_version = Version(version("rapidocr"))
-    if _rapidocr_version < Version("3.0.0"):
-        from rapidocr.utils import RapidOCROutput  # v2.0.6
-    else:
-        from rapidocr.utils.output import RapidOCROutput  # v3.5.0
-except Exception as e:
-    raise e
-
 from src.util import file_util, img_util, hwnd_util, rapidocr_util, screenshot_util, yolo_util
 from src.util.wrap_util import timeit
 
@@ -36,7 +24,7 @@ def test_ocr_from_game():
     hwnd = hwnd_util.get_hwnd()
     img = screenshot_util.screenshot(hwnd)
     engine: RapidOCR = rapidocr_util.create_ocr()
-    output: RapidOCROutput = engine(img, use_det=True, use_rec=True, use_cls=False)
+    output = engine(img, use_det=True, use_rec=True, use_cls=False)
     rapidocr_util.print_ocr_result(output)
     img = img.copy()
     img = img_util.hide_uid(img)
@@ -52,7 +40,7 @@ def test_ocr_rec_only_from_game():
     img = screenshot_util.screenshot(hwnd)
     img_util.save_img_in_temp(img)
     engine: RapidOCR = rapidocr_util.create_ocr()
-    output: RapidOCROutput = engine(img, use_det=True, use_rec=True, use_cls=False)
+    output = engine(img, use_det=True, use_rec=True, use_cls=False)
     rapidocr_util.print_ocr_result(output)
     img = rapidocr_util.draw_ocr_result(output)
     img_util.show_img(img)
@@ -73,7 +61,7 @@ def test_login_hwnd():
         logger.debug("遍历所有登录可见窗口")
         for login_hwnd in hwnd_list_visible:
             img = screenshot_util.screenshot(login_hwnd)
-            output: RapidOCROutput = engine(img, use_det=True, use_rec=True, use_cls=False)
+            output = engine(img, use_det=True, use_rec=True, use_cls=False)
             rapidocr_util.print_ocr_result(output)
             img = rapidocr_util.draw_ocr_result(output)
             img_util.show_img(img)
@@ -89,7 +77,7 @@ def test_ocr_from_dir():
     img = img_util.read_img(img_path)
     logger.debug(img.shape)
     engine: RapidOCR = rapidocr_util.create_ocr()
-    output: RapidOCROutput = engine(img, use_det=True, use_rec=True, use_cls=False)
+    output = engine(img, use_det=True, use_rec=True, use_cls=False)
     rapidocr_util.print_ocr_result(output)
     img = rapidocr_util.draw_ocr_result(output)
     # img_util.show_img(img)
@@ -103,18 +91,23 @@ def test_ocr_from_dir():
 def test_ocr_from_dir_test_use_time():
     logger.debug("\n")
     engine: RapidOCR = rapidocr_util.create_ocr()
-    img_path = file_util.get_temp_screenshot("screenshot_1742048600_50748456.png")
+    img_name = "screenshot_1775218466_22742467.png" # 2560 1440
+    # img_name = "screenshot_1775657801_90118357.png" # 1280 720
+    img_path = file_util.get_temp_screenshot(img_name)
     img = img_util.read_img(img_path)
     logger.debug(img.shape)
     start_time = time.monotonic()
     warm_start_time = time.monotonic()
-    warm_img = img_util.read_img(file_util.get_assets_screenshot("Error_001.png"))
+    # warm_img = img_util.read_img(file_util.get_assets_screenshot("Error_001.png"))
+    warm_img = img_util.read_img(img_path)
     # img_util.resize(warm_img, 200)
     engine(warm_img, use_det=True, use_rec=True, use_cls=False)
     warm_use_time = time.monotonic() - warm_start_time
     logger.debug("预热耗时: %s 秒", warm_use_time)
     for i in range(100):
-        _time_use_test_rapidocr(engine, img)
+        h, w = img.shape[:2]
+        new_img = img_util.resize_by_ratio(img, 540 / h)
+        _time_use_test_rapidocr(engine, new_img)
     use_time = time.monotonic() - start_time
     # gpu pp   耗时: 0.248191 秒, 100次平均耗时: 0.255488 秒，总耗时: 26.38999999999941，耗时:  1.060301 秒 (第1次不计入平均值)
     # gpu onnx 耗时: 0.226402 秒, 100次平均耗时: 0.222805 秒，总耗时: 63.21899999999732，耗时: 41.112181 秒 (第1次不计入平均值)
@@ -262,7 +255,7 @@ def yyy_test(img, model):
 
 @timeit
 def _time_use_test_rapidocr(engine, img):
-    output: RapidOCROutput = engine(img, use_det=True, use_rec=True, use_cls=False)
+    output = engine(img, use_det=True, use_rec=False, use_cls=False)
 
 
 def test_ocr_login():

@@ -1,16 +1,20 @@
 import logging
+import multiprocessing
 import os
+import queue
 import subprocess
+import sys
 import threading
 import time
 from enum import Enum
-from multiprocessing import Event
+from typing import Sequence, Dict
 
 from src.config.gui_config import ParamConfig
 from src.core import environs
 from src.core.contexts import Context
 from src.core.exceptions import StopError
-from src.core.tasks import ProcessTask
+from src.core.tasks import ProcessTask, EchoMergeProcessTask
+from src.core.workflow import TaskSpec, IPCManager
 from src.util import hwnd_util
 
 logger = logging.getLogger(__name__)
@@ -23,8 +27,9 @@ class TaskOpsEnum(Enum):
 
 class TaskMonitor:
 
-    def __init__(self, running_tasks: dict[str, tuple[ProcessTask, Event]], param_config_path: str, gui_win_id: int):
-        self.running_tasks: dict[str, tuple[ProcessTask, Event]] = running_tasks
+    def __init__(self, parent, running_tasks: Dict[str, Sequence], param_config_path: str, gui_win_id: int):
+        self.parent = parent
+        self.running_tasks: Dict[str, Sequence] = running_tasks
         self.param_config_path = param_config_path
         self.gui_win_id = gui_win_id
 
@@ -60,6 +65,100 @@ class TaskMonitor:
             self._monitor_thread.join()
 
     def run(self):
+        # TODO 多任务运行管理
+        if "EchoMergeProcessTask" in self.running_tasks:
+            self._run_EchoMergeProcessTask()
+            return
+        elif "SoarToTheBeatMacroReplayTask" in self.running_tasks:
+            self._run_SoarToTheBeatTask("SoarToTheBeatMacroReplayTask")
+            return
+        elif "SoarToTheBeatMacroRecordTask" in self.running_tasks:
+            self._run_SoarToTheBeatTask("SoarToTheBeatMacroRecordTask")
+            return
+        self._run_restart()
+
+    def _run_SoarToTheBeatTask(self, task_name: str):
+        logger.info("任务监控线程开始运行")
+        try:
+            sleep_seconds = 1
+            from src.gui.common.globals import globalSignal
+            while self._monitor_event.is_set():
+                process_task, event, spec, ipc = self.running_tasks.get(task_name)
+                if not event.is_set():
+                    break
+                try:
+                    msg = ipc.event_queue.get_nowait()
+                    logger.debug(f"event queue: {msg}")
+                    task_msg = msg.get("task", {}).get(task_name)
+                    if task_msg:
+                        status = task_msg[0]
+                        content = None
+                        if len(task_msg) > 1:
+                            content = task_msg[1]
+                        if status in ["finished", "failed"]:
+                            if task_name == "SoarToTheBeatMacroRecordTask":
+                                self.parent.stop_task_in_monitor(task_name)
+                                if status == "finished" and content:
+                                    globalSignal.taskInfoBarSignal.emit("Macro Record: ", content if content else status, 6000)
+                                else:
+                                    globalSignal.taskInfoBarSignal.emit("Macro Record: ", content if content else status, 3000)
+                            elif task_name == "SoarToTheBeatMacroReplayTask":
+                                self.parent.stop_task_in_monitor(task_name)
+                                globalSignal.taskInfoBarSignal.emit("Macro Replay: ", content if content else status, 3000)
+                            else:
+                                self.parent.stop_task_in_monitor(task_name)
+                            break
+                except queue.Empty:
+                    pass
+                except Exception:
+                    logger.exception("解析event queue消息异常")
+                self._sleep(sleep_seconds)
+        except KeyboardInterrupt:
+            raise
+        except StopError:
+            pass
+        except Exception:
+            logger.exception("任务监控线程异常")
+            raise
+        finally:
+            logger.debug("任务监控线程已停止")
+        return
+
+    def _run_EchoMergeProcessTask(self):
+        logger.info("任务监控线程开始运行")
+        task_name = "EchoMergeProcessTask"
+        try:
+            sleep_seconds = 3
+            from src.gui.common.globals import globalSignal
+            while self._monitor_event.is_set():
+                process_task, event, spec, ipc = self.running_tasks.get(task_name)
+                if not event.is_set():
+                    break
+                try:
+                    msg = ipc.event_queue.get_nowait()
+                    logger.debug(f"event queue: {msg}")
+                    task_msg = msg.get("task", {}).get(task_name)
+                    if task_msg in ["finished", "failed"]:
+                        self.parent.stop_task_in_monitor(task_name)
+                        globalSignal.taskInfoBarSignal.emit("Data Merge: ", task_msg, 3000)
+                        break
+                except queue.Empty:
+                    pass
+                except Exception:
+                    logger.exception("解析event queue消息异常")
+                self._sleep(sleep_seconds)
+        except KeyboardInterrupt:
+            raise
+        except StopError:
+            pass
+        except Exception:
+            logger.exception("任务监控线程异常")
+            raise
+        finally:
+            logger.debug("任务监控线程已停止")
+        return
+
+    def _run_restart(self):
         """ 监控任务函数，用于重启异常退出的任务，对于刷boss任务，还会检查和重启游戏 """
         if not self.running_tasks:
             logger.warning("任务列表为空，任务监控线程退出")
@@ -106,7 +205,7 @@ class TaskMonitor:
                 for k, v in self.running_tasks.copy().items():
                     if k == "MouseResetProcessTask":
                         continue
-                    process_task, event = v
+                    process_task, event, spec, ipc = v
                     if not event.is_set():
                         continue
                     self._sleep(1)
@@ -251,7 +350,9 @@ class MainController:
         logger.debug("Initializing %s", self.__class__.__name__)
 
         from src.core.tasks import MouseResetProcessTask, AutoBossProcessTask, AutoPickupProcessTask, \
-            AutoStoryProcessTask, DailyActivityProcessTask, ProcessTask
+            AutoStoryProcessTask, DailyActivityProcessTask, ProcessTask, SoarToTheBeatMacroReplayTask, \
+            SoarToTheBeatMacroRecordTask
+
 
         self.tasks = {
             "MouseResetProcessTask": MouseResetProcessTask,
@@ -260,8 +361,11 @@ class MainController:
             "AutoStorySkipProcessTask": AutoStoryProcessTask,
             "AutoStoryEnjoyProcessTask": AutoStoryProcessTask,
             "DailyActivityProcessTask": DailyActivityProcessTask,
+            "EchoMergeProcessTask": EchoMergeProcessTask,
+            "SoarToTheBeatMacroReplayTask": SoarToTheBeatMacroReplayTask,
+            "SoarToTheBeatMacroRecordTask": SoarToTheBeatMacroRecordTask,
         }
-        self.running_tasks: dict[str, tuple[ProcessTask, Event]] = {}
+        self.running_tasks: Dict[str, Sequence] = {}
         self._lock = threading.Lock()
 
         self.task_monitor = None
@@ -277,46 +381,8 @@ class MainController:
                 if self.running_tasks.get(task_name):
                     logger.warning("任务已存在，请勿重复提交")
                     return False, "任务已存在，请勿重复提交"
-                event = Event()
-                event.set()
-                task_builder = self.tasks.get(task_name)
 
-                from src.config import logging_config
-                from src.core import environs
-                # TODO Manager
-                kwargs = {}
-                kwargs["PARENT_PID"] = str(os.getpid())
-                kwargs["GUI_WIN_ID"] = str(self.gui_win_id)
-                kwargs["LOG_QUEUE"] = logging_config.get_log_queue()
-                if task_name == "AutoStorySkipProcessTask":
-                    kwargs["SKIP_IS_OPEN"] = "True"
-                elif task_name == "AutoStoryEnjoyProcessTask":
-                    kwargs["SKIP_IS_OPEN"] = "False"
-                # if task_name in ["AutoBossProcessTask", "AutoPickupProcessTask"]:
-                if task_name in ["AutoBossProcessTask"]:
-                    kwargs[environs.ENV_WWA_OCR_USE_GPU] = "True"
-                else:
-                    kwargs[environs.ENV_WWA_OCR_USE_GPU] = "False"
-
-                task = task_builder.build(args=(event,), kwargs=kwargs, daemon=True)
-                self.running_tasks[task_name] = (task, event)
-
-                self.task_monitor = TaskMonitor(self.running_tasks.copy(), self.param_config_path, self.gui_win_id)
-                kwargs["GAME_PATH"] = self.task_monitor.game_path
-                kwargs["PARAM_CONFIG_SNAPSHOT"] = self.task_monitor.param_config_snapshot
-
-                # self.task_monitor.start_game()
-
-                task.start()
-
-                # if task_name in ["AutoBossProcessTask", "DailyActivityProcessTask"]:
-                #     from src.core.tasks import MouseResetProcessTask
-                #     mouse_reset_process_task = MouseResetProcessTask.build(
-                #         args=(event,), kwargs=kwargs, daemon=True
-                #     ).start()
-                #     self.running_tasks["MouseResetProcessTask"] = (mouse_reset_process_task, event)
-
-                self.task_monitor.start()
+                self._run_task(task_name)
 
                 logger.info("任务已提交: %s", task_name)
                 return True, "任务已提交"
@@ -326,30 +392,89 @@ class MainController:
                     logger.warning("任务不存在，无需关闭")
                     return True, "任务不存在，无需关闭"
 
-                self.task_monitor.stop()
-                self.task_monitor = None
+                self._stop_task(task_name)
 
-                task, event = self.running_tasks[task_name]
-                event.clear()
-                task.stop(0.1)
-                self.running_tasks.pop(task_name)
-                # if self.running_tasks.get("MouseResetProcessTask"):
-                #     task, event = self.running_tasks["MouseResetProcessTask"]
-                #     task.stop()
-                #     self.running_tasks.pop("MouseResetProcessTask")
                 logger.info("任务已停止: %s", task_name)
                 return True, "任务已停止"
             else:
                 raise NotImplementedError(f"不支持的类型{task_ops}")
 
+    def _run_task(self, task_name: str):
+        spec = TaskSpec()
+        ipc = IPCManager()
+
+        if task_name in ["SoarToTheBeatMacroReplayTask", "SoarToTheBeatMacroRecordTask"]:
+            ipc.log_queue = None
+            ipc.event_queue = queue.Queue(maxsize=200)
+
+            event = threading.Event()
+        else:
+            from src.config import logging_config
+            ipc.log_queue = logging_config.get_log_queue()
+            ipc.event_queue = multiprocessing.Queue(maxsize=200)
+
+            event = multiprocessing.Event()
+        event.set()
+
+        task_builder = self.tasks.get(task_name)
+        kwargs = {}
+        task = task_builder.build(args=(event, spec, ipc), kwargs=kwargs, daemon=True)
+        self.running_tasks[task_name] = (task, event, spec, ipc)
+        self.task_monitor = TaskMonitor(self, self.running_tasks.copy(), self.param_config_path, self.gui_win_id)
+
+        # logger.info(f"run_id: {spec.run_id}")
+        spec.task_name = task_name
+        spec.leader_pid = os.getpid()
+        spec.gui_win_id = self.gui_win_id
+        spec.cli_args = sys.argv
+        spec.game_path = self.task_monitor.game_path
+        spec.param_config_path = self.param_config_path
+        spec.param_config = ParamConfig.snapshot(self.param_config_path)
+        if task_name == "AutoStorySkipProcessTask":
+            spec.skip_is_open = True
+        elif task_name == "AutoStoryEnjoyProcessTask":
+            spec.skip_is_open = False
+        # if task_name in ["AutoBossProcessTask", "AutoPickupProcessTask"]:
+        if task_name in ["AutoBossProcessTask"]:
+            spec.ocr_use_gpu = True
+        else:
+            spec.ocr_use_gpu = False
+
+        task.start()
+        self.task_monitor.start()
+
+    def _stop_task(self, task_name: str):
+        """前端发起任务结束，清理任务数据，关闭监控线程"""
+        logger.debug(f"stop_task: %s", task_name)
+        self.task_monitor.stop()
+        self.task_monitor = None
+
+        task, event, spec, ipc = self.running_tasks[task_name]
+        event.clear()
+        task.stop(0.1)
+        self.running_tasks.pop(task_name)
+
+    def stop_task_in_monitor(self, task_name: str):
+        """任务结束，监控线程调用，清理任务数据，回调前台"""
+        with self._lock:
+            if task_name in self.running_tasks:
+                logger.info("stop_task_in_monitor: %s", task_name)
+                task, event, spec, ipc = self.running_tasks[task_name]
+                event.clear()
+                task.stop(0.1)
+                self.running_tasks.pop(task_name)
+
+                from src.gui.common.globals import globalSignal
+                globalSignal.taskFinishedSignal.emit(task_name)
+
     def stop(self):
         logger.info("关闭主窗口")
         if self.task_monitor:
             self.task_monitor.stop(False)
-        for task_name, task_event in self.running_tasks.items():
-            if not task_event:
+        for task_name, value in self.running_tasks.items():
+            if not value:
                 continue
-            task, event = task_event
+            task, event, spec, ipc = value
             event.clear()
             task.stop(0)
 
@@ -363,15 +488,15 @@ class MainController:
         self.gui_win_id = gui_win_id
 
 
-if __name__ == '__main__':
-    from src.config import logging_config
-
-    logging_config.setup_logging_test()
-    main_controller = MainController()
-
-    # main_controller.execute("MouseResetController", TaskOpsEnum.START.value)
-    main_controller.execute("AutoBossController", TaskOpsEnum.START.value)
-    # main_controller.execute("AutoPickupController", TaskOpsEnum.START.value)
-    # main_controller.execute("AutoStoryController", TaskOpsEnum.START.value)
-    # main_controller.execute("DailyActivityController", TaskOpsEnum.START.value)
-    time.sleep(10000000)
+# if __name__ == '__main__':
+#     from src.config import logging_config
+#
+#     logging_config.setup_logging_test()
+#     main_controller = MainController()
+#
+#     # main_controller.execute("MouseResetController", TaskOpsEnum.START.value)
+#     main_controller.execute("AutoBossController", TaskOpsEnum.START.value)
+#     # main_controller.execute("AutoPickupController", TaskOpsEnum.START.value)
+#     # main_controller.execute("AutoStoryController", TaskOpsEnum.START.value)
+#     # main_controller.execute("DailyActivityController", TaskOpsEnum.START.value)
+#     time.sleep(10000000)

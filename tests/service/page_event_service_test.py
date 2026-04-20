@@ -3,18 +3,6 @@ import os
 
 from rapidocr import RapidOCR
 
-from importlib.metadata import version
-from packaging.version import Version
-
-try:
-    _rapidocr_version = Version(version("rapidocr"))
-    if _rapidocr_version < Version("3.0.0"):
-        from rapidocr.utils import RapidOCROutput  # v2.0.6
-    else:
-        from rapidocr.utils.output import RapidOCROutput  # v3.5.0
-except Exception as e:
-    raise e
-
 from src.core.contexts import Context
 from src.core.injector import Container
 from src.core.interface import ControlService, OCRService, ODService, ImgService, WindowService
@@ -99,7 +87,7 @@ def _test_ui_page(page, engine):
 def __test_ui_page(page, engine, img_name):
     logger.debug("img_name: %s", img_name)
     img = img_util.read_img(file_util.get_assets_screenshot(img_name))
-    output: RapidOCROutput = engine(img, use_det=True, use_rec=True, use_cls=False)
+    output = engine(img, use_det=True, use_rec=True, use_cls=False)
     positions = RapidocrPosition.format(output)
     is_match = page.is_match(img, img, positions)
     if not is_match:
@@ -128,7 +116,7 @@ def test_page_match():
     hwnd = hwnd_util.get_hwnd()
     img = screenshot_util.screenshot(hwnd)
     img_util.save_img_in_temp(img)
-    output: RapidOCROutput = engine(img, use_det=True, use_rec=True, use_cls=False)
+    output = engine(img, use_det=True, use_rec=True, use_cls=False)
     positions = RapidocrPosition.format(output)
     is_match = page.is_match(img, img, positions)
     if not is_match:

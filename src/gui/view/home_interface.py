@@ -82,10 +82,21 @@ class HomeInterface(ScrollArea):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
+
         StyleSheet.HOME_INTERFACE.apply(self)
+
+        self.mainLayout = QVBoxLayout(self)
+
+        # 顶部 Banner
         self.banner = BannerWidget(self)
+
+        # 中间滚动区域
+        self.scrollArea = ScrollArea(self)
         self.view = QWidget(self)
-        self.vBoxLayout = QVBoxLayout(self.view)
+        self.scrollLayout = QVBoxLayout(self.view)
+
+        # 底部固定区域
+        self.runView = None
 
         self.__initWidget()
         self.loadSamples()
@@ -95,14 +106,21 @@ class HomeInterface(ScrollArea):
         self.setObjectName('homeInterface')
         # StyleSheet.HOME_INTERFACE.apply(self)
 
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setWidget(self.view)
-        self.setWidgetResizable(True)
+        self.mainLayout.setContentsMargins(0, 0, 0, 36)
+        self.mainLayout.setSpacing(10)
 
-        self.vBoxLayout.setContentsMargins(0, 0, 0, 36)
-        self.vBoxLayout.setSpacing(10)
-        self.vBoxLayout.addWidget(self.banner)
-        self.vBoxLayout.setAlignment(Qt.AlignTop)
+        # ScrollArea 设置
+        self.scrollArea.setWidget(self.view)
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.scrollLayout.setContentsMargins(0, 0, 0, 0)
+        self.scrollLayout.setSpacing(10)
+        self.scrollLayout.setAlignment(Qt.AlignTop)
+
+        # 布局结构R
+        self.mainLayout.addWidget(self.banner)
+        self.mainLayout.addWidget(self.scrollArea, 1)
 
     def loadSamples(self):
         """ load samples """
@@ -117,6 +135,7 @@ class HomeInterface(ScrollArea):
             routeKey="basicInputInterface",
             index=0,
             task_name="AutoBossProcessTask",
+            # checked=True,
         )
         basicInputView.addSampleCard(
             icon=":/gallery/images/controls/Checkbox.png",
@@ -146,45 +165,72 @@ class HomeInterface(ScrollArea):
         )
         basicInputView.addSampleCard(
             icon=":/gallery/images/controls/Checkbox.png",
-            title="每日任务 完成一半",
+            title="沿着节拍启航 自动音游",
             content=self.tr(
-                "自动完成每日活跃度任务，领取奖励"),
+                "启动脚本，回到游戏点击开始，挂机别动直到结束"),
             routeKey="basicInputInterface",
             index=13,
-            task_name="DailyActivityProcessTask",
+            task_name="SoarToTheBeatMacroReplayTask",
         )
+
+        from src.util import file_util
+        macro_SoarToTheBeat = str(file_util.get_assets_macro_SoarToTheBeat())
         basicInputView.addSampleCard(
             icon=":/gallery/images/controls/Checkbox.png",
-            title="刷体力 完成一半",
+            title="沿着节拍启航 录制按键",
             content=self.tr(
-                "刷无音区、材料本"),
+                "启动脚本，回到游戏点击开始，正常操作即可，快捷键ESC可退出并保存，直接点停止不保存。鼠标悬停显示更多说明"
+            ),
             routeKey="basicInputInterface",
             index=14,
-            task_name="DailyActivityProcessTask",
+            task_name="SoarToTheBeatMacroRecordTask",
+            tooltip=self.tr(
+                f"保存路径: {macro_SoarToTheBeat}"
+                # "将文件重命名为与template目录内歌曲同名，将优先使用你的宏，禁止修改模板文件。"
+            )
         )
         basicInputView.addSampleCard(
             icon=":/gallery/images/controls/Checkbox.png",
-            title="背包声骸锁定，未迁移，优先级低",
+            title="声骸融合",
             content=self.tr(
-                "配置需要的声骸属性，自动将背包内符合的声骸上锁"),
+                "融合背包内未锁定的声骸\n任意分辨率"),
             routeKey="basicInputInterface",
             index=15,
-            task_name="",
+            task_name="EchoMergeProcessTask",
         )
         basicInputView.addSampleCard(
             icon=":/gallery/images/controls/Checkbox.png",
-            title="声骸合成五合一，不迁移，会做一百的",
+            title="施工中...",
             content=self.tr(
-                "合成声骸，自动锁定需要的声骸"),
+                ""),
             routeKey="basicInputInterface",
             index=16,
             task_name="",
         )
-        self.vBoxLayout.addWidget(basicInputView)
+        basicInputView.addSampleCard(
+            icon=":/gallery/images/controls/Checkbox.png",
+            title="施工中...",
+            content=self.tr(
+                ""),
+            routeKey="basicInputInterface",
+            index=17,
+            task_name="",
+        )
+        basicInputView.addSampleCard(
+            icon=":/gallery/images/controls/Checkbox.png",
+            title="施工中...",
+            content=self.tr(
+                ""),
+            routeKey="basicInputInterface",
+            index=18,
+            task_name="",
+        )
 
-        runView = SampleCardView(
-            self.tr("Run"), self.view)
-        runWidget = runView.addRun(
+        self.scrollLayout.addWidget(basicInputView)
+
+        self.runView = SampleCardView(self.tr("Run"), self)
+
+        runWidget = self.runView.addRun(
             icon=":/gallery/images/controls/ProgressRing.png",
             title="运行",
             content=self.tr(
@@ -192,15 +238,9 @@ class HomeInterface(ScrollArea):
             routeKey="basicInputInterface",
             index=-1
         )
-        # startGameWidget = runView.addRun(
-        #     icon=":/gallery/images/controls/ProgressRing.png",
-        #     title="启动游戏",
-        #     content=self.tr(
-        #         ""),
-        #     routeKey="basicInputInterface",
-        #     index=-1
-        # )
-        self.vBoxLayout.addWidget(runView)
+
+        # 固定在最底部（不在 scrollArea 里）
+        self.mainLayout.addWidget(self.runView)
 
         for card in basicInputView.card_group:
             card.task_selected.connect(runWidget.update_task) # 连接信号

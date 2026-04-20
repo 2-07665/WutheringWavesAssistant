@@ -8,15 +8,14 @@ from typing import Callable
 import numpy as np
 
 from src.core.boss import BossNameEnum, MoveMode, Direction, RouteStep
-from src.core.combat.combat_core import DynamicPointTransformer, ResonatorNameEnum, AlignEnum, BaseResonator, \
-    ScenarioEnum
+from src.core.combat.combat_core import ResonatorNameEnum, BaseResonator, ScenarioEnum
 from src.core.combat.combat_system import CombatSystem
 from src.core.contexts import Context, Status
 from src.core.interface import ControlService, OCRService, PageEventService, ImgService, WindowService, ODService, \
     BossInfoService
 from src.core.languages import Languages
 from src.core.pages import ConditionalAction, TextMatch, Page
-from src.core.regions import TextPosition, DynamicPosition, Position
+from src.core.regions import TextPosition, DynamicPosition, Position, DynamicPointTransformer, AlignEnum
 
 logger = logging.getLogger(__name__)
 

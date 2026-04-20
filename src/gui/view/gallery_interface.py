@@ -34,7 +34,7 @@ class SeparatorWidget(QWidget):
 class ToolBar(QWidget):
     """ Tool bar """
 
-    def __init__(self, title, subtitle, parent=None, needButtonLayout=True):
+    def __init__(self, title, subtitle, parent=None, needButtonLayout=True, subtitleSelectableByMouse=False):
         super().__init__(parent=parent)
         self.titleLabel = TitleLabel(title, self)
 
@@ -62,6 +62,9 @@ class ToolBar(QWidget):
             self.feedbackButton = ToolButton(FluentIcon.FEEDBACK, self)
 
             self.buttonLayout = QHBoxLayout()
+
+        if subtitleSelectableByMouse is True:
+            self.subtitleLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         self.vBoxLayout = QVBoxLayout(self)
 
@@ -221,7 +224,7 @@ class ExampleCard(QWidget):
 class GalleryInterface(ScrollArea):
     """ Gallery interface """
 
-    def __init__(self, title: str, subtitle: str, parent=None, needButtonLayout=True):
+    def __init__(self, title: str, subtitle: str, parent=None, needButtonLayout=True, subtitleSelectableByMouse=False):
         """
         Parameters
         ----------
@@ -236,7 +239,7 @@ class GalleryInterface(ScrollArea):
         """
         super().__init__(parent=parent)
         self.view = QWidget(self)
-        self.toolBar = ToolBar(title, subtitle, self, needButtonLayout)
+        self.toolBar = ToolBar(title, subtitle, self, needButtonLayout, subtitleSelectableByMouse)
         self.vBoxLayout = QVBoxLayout(self.view)
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)

@@ -487,7 +487,6 @@ class AutoBossServiceImpl(PageEventAbstractService):
                 # 3. 取消游戏窗口的置顶状态
                 hwnd_util.set_window_not_topmost(self._window_service.window)
                 # 4. 移动窗口
-                # gui_win_id = int(kwargs.get("GUI_WIN_ID"))
                 hwnd_util.set_window_left_top_and_below_another(self._window_service.window, self._info.gui_win_id)
                 # 5. 将鼠标移回原位
                 keymouse_util.set_mouse_position(original_x, original_y)

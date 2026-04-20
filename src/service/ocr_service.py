@@ -1,17 +1,15 @@
-import asyncio
 import importlib.util
 import logging
-import os
 import re
 import time
-from asyncio import Task
-from concurrent.futures import ThreadPoolExecutor
+from abc import ABC
 
 import numpy as np
 
-from src.core import environs
 from src.core.contexts import Context
+from src.core.geometry import TextBox, BBox, RapidocrTextBox, PaddleocrTextBox
 from src.core.interface import OCRService, ImgService, WindowService
+from src.core.pages import OcrResult
 from src.core.regions import Position, RapidocrPosition, TextPosition, DynamicPosition, PaddleocrPosition
 from src.util import rapidocr_util
 from src.util.wrap_util import timeit
@@ -19,42 +17,64 @@ from src.util.wrap_util import timeit
 logger = logging.getLogger(__name__)
 
 
-def is_ocr_use_gpu() -> bool:
-    ocr_use_gpu = None
-    if environs.get_ocr_use_gpu() == "True":
-        if importlib.util.find_spec("paddle") and importlib.util.find_spec("onnxruntime"):
-            import paddle
-            import onnxruntime
-            if paddle.is_compiled_with_cuda() and "CUDAExecutionProvider" in onnxruntime.get_available_providers():
-                ocr_use_gpu = True
-                logger.info("OCR is running on GPU ✅")
-        if ocr_use_gpu is None:
-            ocr_use_gpu = False
-            logger.warning("OCR expected GPU, falling back to CPU ⚠️")
-    if ocr_use_gpu is None:
-        ocr_use_gpu = False
-        logger.info("OCR is running on CPU ✅")
-    return ocr_use_gpu
-
-
-class RapidOcrServiceImpl(OCRService):
+class AbstractOcrService(OCRService, ABC):
 
     def __init__(self, context: Context, window_service: WindowService, img_service: ImgService):
-        logger.debug("Initializing %s", self.__class__.__name__)
         super().__init__()
         self._context: Context = context
         self._window_service: WindowService = window_service
         self._img_service: ImgService = img_service
 
-        self.ocr_use_gpu = is_ocr_use_gpu()
+        self.ocr_use_gpu = self.is_ocr_use_gpu()
+
+    def is_ocr_use_gpu(self) -> bool:
+        ocr_use_gpu = None
+        if self._context.spec.ocr_use_gpu is True:
+            if importlib.util.find_spec("paddle") and importlib.util.find_spec("onnxruntime"):
+                import paddle
+                import onnxruntime
+                if paddle.is_compiled_with_cuda() and "CUDAExecutionProvider" in onnxruntime.get_available_providers():
+                    ocr_use_gpu = True
+                    logger.info("OCR is running on GPU ✅")
+            if ocr_use_gpu is None:
+                ocr_use_gpu = False
+                logger.warning("OCR expected GPU, falling back to CPU ⚠️")
+        if ocr_use_gpu is None:
+            ocr_use_gpu = False
+            logger.info("OCR is running on CPU ✅")
+        return ocr_use_gpu
+
+    def _resize_bboxes(self, bboxes: list[TextBox], factor: float):
+        if bboxes is None:
+            return None
+        return [bbox.resize(factor) for bbox in bboxes]
+
+    def _resize_img(self, img: np.ndarray) -> tuple[np.ndarray, float]:
+        """
+        ocr图片统一缩放，仅需在合理范围内缩放，适配1280x720 1600x900 2560x1440等常见分辨率，压缩到高720
+        太离谱的会触发ocr引擎参数自动缩放
+        :param img:
+        :return:
+        """
+        h, w = img.shape[:2]
+        if h > 720 and w > 1280:
+            # 压缩会导致小字识别错误
+            # base_h = 540
+            # base_h = 640
+            base_h = 720
+            new_img = self._img_service.resize_by_ratio(img, base_h / h)
+            return new_img, h / base_h
+        return img, 1.0
+
+
+class RapidOcrServiceImpl(AbstractOcrService):
+
+    def __init__(self, context: Context, window_service: WindowService, img_service: ImgService):
+        logger.debug("Initializing %s", self.__class__.__name__)
+        super().__init__(context, window_service, img_service)
 
         self._engine = rapidocr_util.create_ocr(use_gpu=self.ocr_use_gpu)
-        # self._collection: set[str] = set()
         self._last_time = time.time()
-        # self._executor = ThreadPoolExecutor(max_workers=2)
-
-    # def __del__(self):
-    #     self._executor.shutdown(wait=False)
 
     def search_text(self, results: list[TextPosition], target: str) -> TextPosition | None:
         for result in results:
@@ -80,26 +100,6 @@ class RapidOcrServiceImpl(OCRService):
             if text_info := self.search_text(result, target):
                 return text_info
         return None
-
-    # def async_find_text(self, targets: str | list[str], img: np.ndarray | None = None,
-    #                     position: Position | DynamicPosition | None = None) -> Task:
-    #     return asyncio.create_task(
-    #         self._async_find_text(targets, img, position),
-    #         name=f"find_text: {targets}"
-    #     )
-    #
-    # async def _async_find_text(self, targets: str | list[str], img: np.ndarray | None = None,
-    #                            position: Position | DynamicPosition | None = None):
-    #     loop = asyncio.get_running_loop()
-    #     try:
-    #         return await loop.run_in_executor(  # 将同步方法提交到线程池
-    #             self._executor,  # 线程池
-    #             self.find_text,  # 要执行的同步方法
-    #             targets, img, position  # 参数
-    #         )
-    #     except Exception as e:
-    #         logger.error(f"Inference failed: {e}")
-    #         return None
 
     def wait_text(self, targets: str | list[str], timeout: float = 3.0,
                   position: Position | DynamicPosition | None = None, wait_time: float = 0.1) -> TextPosition | None:
@@ -148,17 +148,35 @@ class RapidOcrServiceImpl(OCRService):
         for result in ocr_results:
             logger.debug(result)
 
+    @timeit(ignore=3)
+    def query(
+            self,
+            img: np.ndarray,
+            bbox: BBox | None = None,
+            det=True,
+            rec=True,
+            cls=False,
+    ) -> OcrResult:
+        if bbox:
+            img = img[bbox.as_slice()]
+        img, ratio = self._resize_img(img)
+        if det is True and rec is True and cls is False:
+            output = self._engine(img, use_det=True, use_rec=True, use_cls=False)
+            result = RapidocrTextBox.format(output)
+        elif det is False and rec is True and cls is False:
+            output = self._engine(img, use_det=False, use_rec=True, use_cls=False)
+            result = RapidocrTextBox.format(output)
+        else:
+            raise NotImplementedError("不支持的识别方式")
+        result = self._resize_bboxes(result, ratio)
+        return OcrResult(result)
 
-class PaddleOcrServiceImpl(OCRService):
+
+class PaddleOcrServiceImpl(AbstractOcrService):
 
     def __init__(self, context: Context, window_service: WindowService, img_service: ImgService):
         logger.debug("Initializing %s", self.__class__.__name__)
-        super().__init__()
-        self._context: Context = context
-        self._window_service: WindowService = window_service
-        self._img_service: ImgService = img_service
-
-        self.ocr_use_gpu = is_ocr_use_gpu()
+        super().__init__(context, window_service, img_service)
 
         from src.util import paddleocr_util
         self._engine = paddleocr_util.create_paddleocr(use_gpu=self.ocr_use_gpu)
@@ -235,6 +253,29 @@ class PaddleOcrServiceImpl(OCRService):
             return
         for result in ocr_results:
             logger.debug(result)
+
+    @timeit(ignore=3)
+    def query(
+            self,
+            img: np.ndarray,
+            bbox: BBox | None = None,
+            det=True,
+            rec=True,
+            cls=False,
+    ) -> OcrResult:
+        if bbox:
+            img = img[bbox.as_slice()]
+        img, ratio = self._resize_img(img)
+        if det is True and rec is True and cls is False:
+            output = self._engine(img, use_det=True, use_rec=True, use_cls=False)
+            result = PaddleocrTextBox.format(output)
+        elif det is False and rec is True and cls is False:
+            output = self._engine(img, use_det=False, use_rec=True, use_cls=False)
+            result = PaddleocrTextBox.format(output)
+        else:
+            raise NotImplementedError("不支持的识别方式")
+        result = self._resize_bboxes(result, ratio)
+        return OcrResult(result)
 
 # SVTR
 # class SVTROcrServiceImpl(OCRService):

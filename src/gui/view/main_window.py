@@ -59,8 +59,6 @@ class MainWindow(FluentWindow):
         # start theme listener
         self.themeListener.start()
 
-        globalSignal.guiWinId.emit(self.winId())
-
         self.remoteVersion = RemoteVersion(VERSION_URLS, self.remoteVersionFinishedSignal.emit, self)
         if cfg.checkUpdateAtStartUpV2.value is True:
             self.remoteVersion.request()
@@ -71,6 +69,7 @@ class MainWindow(FluentWindow):
         signalBus.supportSignal.connect(self.onSupport)
         signalBus.windowSizeChanged.connect(self.windowResize)
         self.remoteVersionFinishedSignal.connect(self.showUpdateVersion)
+        globalSignal.taskInfoBarSignal.connect(self.showTaskInfoBar)
 
     def initNavigation(self):
         # add navigation items
@@ -163,3 +162,20 @@ class MainWindow(FluentWindow):
             msg = self.tr(" *有新版本 {version}").format(version=self.remoteVersion.version)
             self.setWindowTitle(self.windowTitle() + msg)
             self.remoteVersion.showInfoBar(msg, 5000, self.homeInterface)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        # 以回调的方式获取窗口id，保证已初始化完成
+        globalSignal.guiWinId.emit(self.winId())
+
+    def showTaskInfoBar(self, title, content, duration):
+        logger.debug(f"showTaskInfoBar title:{title}, content:{content}, duration:{duration}")
+        InfoBar.success(
+            title=title,
+            content=content,
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=duration,
+            parent=InfoBar.desktopView()
+        )

@@ -49,7 +49,7 @@ class CustomColoredFormatter(ColoredFormatter):
 
 
 # 日志队列，收集所有进程的日志，用于ui上展示
-_LOG_QUEUE = multiprocessing.Queue()
+_LOG_QUEUE = multiprocessing.Queue(maxsize=1000)
 
 
 def get_log_queue():

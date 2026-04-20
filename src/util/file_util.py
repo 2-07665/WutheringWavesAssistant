@@ -82,6 +82,14 @@ def get_assets_template(file_name: str | None = None):
     return get_path("assets/template", file_name)
 
 
+def get_assets_macro_SoarToTheBeat(file_name: str | None = None):
+    return get_path(r"assets/macro/Soar to the Beat", file_name)
+
+
+def get_assets_macro_SoarToTheBeat_template(file_name: str | None = None):
+    return get_path(r"assets/macro/Soar to the Beat/template", file_name)
+
+
 def get_ico():
     return get_path("src/gui/resource/images", "logo.ico")
 

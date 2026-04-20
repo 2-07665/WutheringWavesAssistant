@@ -7,16 +7,18 @@ logger = logging.getLogger(__name__)
 
 
 class Container(containers.DeclarativeContainer):
-    from src.core.contexts import Context
     from src.service.auto_boss_service import AutoBossServiceImpl
     from src.service.auto_pickup_service import AutoPickupServiceImpl
     from src.service.auto_story_service import AutoStoryServiceImpl
     from src.service.boss_info_service import BossInfoServiceImpl
+    from src.service.combat_service import CombatServiceImpl
     from src.service.control_service import Win32ControlServiceImpl
     from src.service.daily_activity_service import DailyActivityServiceImpl
     from src.service.img_service import ImgServiceImpl
     # from src.service.ocr_service import PaddleOcrServiceImpl
     # from src.service.ocr_service import RapidOcrServiceImpl
+    from src.service.page_service import PageServiceImpl
+    from src.service.page_service import EchoMergeServiceImpl
     from src.service.od_service import YoloServiceImpl
     from src.service.window_service import HwndServiceImpl
 
@@ -24,19 +26,19 @@ class Container(containers.DeclarativeContainer):
     try:
         # 若安装paddleocr则是用paddleocr作为ocr引擎
         if importlib.util.find_spec("paddleocr"):
-            from paddleocr import PaddleOCR
+            from paddleocr import PaddleOCR  # type: ignore
             from src.service.ocr_service import PaddleOcrServiceImpl
             ocr_engine_impl = PaddleOcrServiceImpl
             logger.info("paddleocr detected")
     except Exception:
-        pass
+        logger.exception("Failed to import PaddleOCR")
     # 默认ocr引擎
     if ocr_engine_impl is None:
         from src.service.ocr_service import RapidOcrServiceImpl
         ocr_engine_impl = RapidOcrServiceImpl
         logger.debug("rapidocr detected")
 
-    context = providers.Dependency()
+    context = providers.Dependency()  # 占位，后续覆盖成真实ctx
     keyboard_mapping = providers.Object({})
     window_service = providers.Singleton(HwndServiceImpl, context=context)
     img_service = providers.Singleton(
@@ -63,6 +65,34 @@ class Container(containers.DeclarativeContainer):
     )
     boss_info_service = providers.Singleton(
         BossInfoServiceImpl
+    )
+    page_service = providers.Singleton(
+        PageServiceImpl,
+        context=context,
+        window_service=window_service,
+        img_service=img_service,
+        ocr_service=ocr_service,
+        control_service=control_service,
+        od_service=od_service,
+        boss_info_service=boss_info_service,
+    )
+    echo_merge_service = providers.Singleton(
+        EchoMergeServiceImpl,
+        context=context,
+        window_service=window_service,
+        img_service=img_service,
+        ocr_service=ocr_service,
+        control_service=control_service,
+        od_service=od_service,
+        boss_info_service=boss_info_service,
+    )
+    combat_system = providers.Singleton(
+        CombatServiceImpl,
+        context=context,
+        window_service=window_service,
+        img_service=img_service,
+        control_service=control_service,
+        boss_info_service=boss_info_service,
     )
     auto_boss_service = providers.Singleton(
         AutoBossServiceImpl,
@@ -110,7 +140,7 @@ class Container(containers.DeclarativeContainer):
         super().__init__(**kwargs)
 
     @staticmethod
-    def build(context: Context) -> "Container":
+    def build(context) -> "Container":
         container = Container()
         container.context.override(providers.Object(context))
         context._container = container

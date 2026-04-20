@@ -1,6 +1,7 @@
 import functools
 import logging
 import time
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -43,3 +44,18 @@ def timeit(_func=None, *, ignore: int = 0):
         return decorator_timeit
     else:
         return decorator_timeit(_func)
+
+
+def deprecated(func):
+    """装饰器：标记函数已弃用"""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        warnings.warn(
+            f"{func.__name__} is deprecated and will be removed in the future",
+            category=DeprecationWarning,
+            stacklevel=2
+        )
+        return func(*args, **kwargs)
+    return wrapper
+
+

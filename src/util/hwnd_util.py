@@ -104,6 +104,10 @@ def _find_all_windows(class_name=None, titles=None):
     return result
 
 
+def get_hwnd_title(hwnd) -> str:
+    return win32gui.GetWindowText(hwnd)
+
+
 def get_hwnd_by_class_and_title(class_name: str, titles: list[str] | str) -> list:
     if isinstance(titles, str):
         titles = [titles]
@@ -290,7 +294,7 @@ def get_client_rect(hwnd) -> tuple[int, int, int, int]:
     return win32gui.GetClientRect(hwnd)
 
 
-def get_window_wh(hwnd) -> (int, int):
+def get_window_wh(hwnd) -> tuple[int, int]:
     """获取特定窗口的宽高px"""
     left, top, right, bot = win32gui.GetWindowRect(hwnd)
     logger.debug("window rect: (%s, %s, %s, %s)", left, top, right, bot)

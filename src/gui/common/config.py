@@ -171,6 +171,13 @@ class ParamConfig(QConfig):
 
     autoRestartPeriod = ConfigItem("BossRush", "AutoRestartPeriod", 'Close')
 
+    # macroReplaySoarToTheBeat
+    soarToTheBeat_DefaultTemplate = ConfigItem("SoarToTheBeat", "DefaultTemplate", None)
+    soarToTheBeat_UserTemplate = ConfigItem("SoarToTheBeat", "UserTemplate", None)
+    soarToTheBeat_UseUserTemplate = ConfigItem("SoarToTheBeat", "UseUserTemplate", False, BoolValidator())
+
+    # macroRecordSoarToTheBeat = ConfigItem("MacroRecordSoarToTheBeat", "user")
+
     # Game
     gamePath = ConfigItem("Game", "GamePath", "Auto", GameFolderValidator())
 

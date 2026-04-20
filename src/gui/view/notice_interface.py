@@ -87,7 +87,8 @@ class NoticeInterface(GalleryInterface):
         super().__init__(
             title=self.tr("Notice"),
             subtitle="https://github.com/wakening/WutheringWavesAssistant",
-            parent=parent
+            parent=parent,
+            subtitleSelectableByMouse=True,
         )
         self.setObjectName('noticeInterface')
         # StyleSheet.NOTICE_INTERFACE.apply(self)

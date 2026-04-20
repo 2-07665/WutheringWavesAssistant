@@ -15,3 +15,7 @@ QLabel#settingLabel {
     color: white;
 }
 
+QLabel {
+    font: 14px 'Segoe UI', 'Microsoft YaHei', 'PingFang SC';
+    color: white;
+}

@@ -19,6 +19,11 @@ class ParamConfig(BaseModel):
                                  description="游戏路径，不做处理默认可能是枚举值Auto，可使用get函数动态获取")
     autoCombatBeta: bool | None = Field(None, alias="autoCombatBeta")
 
+    # SoarToTheBeat
+    defaultTemplate: str | None = Field(None, alias="defaultTemplate")
+    userTemplate: str | None = Field(None, alias="userTemplate")
+    useUserTemplate: bool | None = Field(None, alias="useUserTemplate")
+
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -59,6 +64,11 @@ class ParamConfig(BaseModel):
         pre_data["bossLevel"] = bossRush.get("BossLevel")
         pre_data["autoRestartPeriod"] = bossRush.get("AutoRestartPeriod")
         pre_data["autoCombatBeta"] = bossRush.get("AutoCombatBetaV2")
+
+        soarToTheBeat = data.get("SoarToTheBeat", {})
+        pre_data["defaultTemplate"] = soarToTheBeat.get("DefaultTemplate")
+        pre_data["useUserTemplate"] = soarToTheBeat.get("UseUserTemplate")
+        pre_data["userTemplate"] = soarToTheBeat.get("UserTemplate")
 
         pre_data["gamePath"] = data.get("Game", {}).get("GamePath")
         return pre_data

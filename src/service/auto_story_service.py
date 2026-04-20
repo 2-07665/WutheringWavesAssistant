@@ -1,5 +1,4 @@
 import logging
-import os
 import threading
 import time
 
@@ -69,10 +68,9 @@ class AutoStoryServiceImpl(PageEventAbstractService):
         self._build_story_pages()
         self._story_conditional_actions: list[ConditionalAction] = []
 
-        logger.debug("os.environ: %s", os.environ)
         # skip_page
-        env_skip_is_open = os.environ.get("SKIP_IS_OPEN")
-        self.skip_is_open = env_skip_is_open and env_skip_is_open == "True" # 跳过剧情 还是 沉浸式
+        env_skip_is_open = context.spec.skip_is_open
+        self.skip_is_open = env_skip_is_open is True # 跳过剧情 还是 沉浸式
         self.skip_btn_is_clicked = False # 是否点击了跳过按钮，用于开启不再提示和剧情梗概的识别
         self.skip_btn_is_clicked_start_time = time.time()
         self.skip_btn_is_clicked_timeout = 3 # 不再提示和剧情梗概识别的最大时间，避免万一clicked状态未变导致每次都识别占用资源

@@ -7,9 +7,12 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 class Languages(Enum):
+    """
+    BCP 47 / ISO
+    """
     EN = 'en'  # English - 英语
-    ZH = 'zh-Hans'  # Simplified Chinese - 简体中文
-    ZH_HK = 'zh-Hant'  # Traditional Chinese (Hong Kong、Taiwan) - 繁体中文
+    ZH = 'zh-CN'  # Simplified Chinese - 简体中文
+    ZH_HK = 'zh-HK'  # Traditional Chinese (Hong Kong、Taiwan) - 繁体中文
     FR = 'fr'  # French - 法语
     DE = 'de'  # German - 德语
     ES = 'es'  # Spanish - 西班牙语
@@ -32,27 +35,7 @@ class Languages(Enum):
     ID = 'id'  # Indonesian - 印度尼西亚语
     HE = 'he'  # Hebrew - 希伯来语
 
-#
-# class Language(BaseModel):
-#     # msgid: str = Field(...)
-#     # msgstr: str = Field(...)
-#     text: dict[LocaleCode, str] = Field(default_factory=dict)
-#
-#     @staticmethod
-#     def build(text: dict[LocaleCode, str]):
-#         _language = Language()
-#         _language.text = text
-#         return _language
-#
-#
-# class UI:
-#     """基本界面文本"""
-#     Activity = Language.build({
-#         LocaleCode.EN_US: "Defeat 1 Calamity Class enem",
-#         LocaleCode.ZH_CN: "",
-#     })
-#
-#
+
 # if __name__ == '__main__':
 #     print(locale.getdefaultlocale())
 #     print(locale.locale_alias)

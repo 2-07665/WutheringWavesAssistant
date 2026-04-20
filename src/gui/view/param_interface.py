@@ -2,11 +2,12 @@
 import logging
 from typing import Union, List
 
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import Qt, Signal, QSize, QEvent
 from PySide6.QtGui import QIcon, QColor, QIntValidator
 from PySide6.QtWidgets import QWidget, QLabel, QFileDialog, QFrame, QVBoxLayout, QButtonGroup, QHBoxLayout, QPushButton, \
     QApplication, QSizePolicy
-from qfluentwidgets import FluentIcon as FIF, OptionsSettingCard, SwitchSettingCard, SwitchButton, IndicatorPosition
+from qfluentwidgets import FluentIcon as FIF, OptionsSettingCard, SwitchSettingCard, SwitchButton, IndicatorPosition, \
+    InfoBarPosition, FlowLayout, FluentIcon, Flyout, InfoBarIcon
 from qfluentwidgets import InfoBar
 from qfluentwidgets import (SettingCardGroup, ScrollArea,
                             ExpandLayout, ExpandSettingCard, FluentIconBase,
@@ -16,8 +17,9 @@ from qfluentwidgets import (SettingCardGroup, ScrollArea,
                             PushButton, ToolButton, MessageBox)
 
 from ..common.config import paramConfig, BossNameEnum
-from ..common.globals import globalParam
+from ..common.globals import globalParam, globalSignal
 from ..common.style_sheet import StyleSheet
+from ..components.my_expand_setting_card import FlowExpandSettingCard
 
 logger = logging.getLogger(__name__)
 
@@ -310,8 +312,7 @@ class AutoCombatSwitchSettingCard(SettingCard):
         """
         super().__init__(icon, title, content, parent)
         self.configItem = configItem
-        self.switchButton = SwitchButton(
-            self.tr('Off'), self, IndicatorPosition.RIGHT)
+        self.switchButton = SwitchButton(self, IndicatorPosition.RIGHT)
 
         if configItem:
             self.setValue(paramConfig.get(configItem))
@@ -724,7 +725,8 @@ class ClickableButton(QWidget):
         self.button = button
         self.layout = QHBoxLayout(self)
         # self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setContentsMargins(0, 1, 0, 6)
+        # self.layout.setContentsMargins(0, 1, 0, 6)
+        self.layout.setContentsMargins(0, 3, 0, 4)
         # self.layout.setAlignment(Qt.AlignVCenter)
         self.layout.addWidget(self.button)
         # self.setStyleSheet("background: rgba(0, 255, 0, 0.1);")
@@ -735,7 +737,7 @@ class ClickableButton(QWidget):
         super().mousePressEvent(event)
 
 
-class BossNameOptionsSettingCard(ExpandSettingCard):
+class BossNameOptionsSettingCard(FlowExpandSettingCard):
     """ setting card with a group of options """
 
     optionChanged = Signal(OptionsConfigItem)
@@ -755,21 +757,29 @@ class BossNameOptionsSettingCard(ExpandSettingCard):
         # create buttons
         # self.viewLayout.setSpacing(19)
         self.viewLayout.setSpacing(0)
-        self.viewLayout.setContentsMargins(48, 18, 0, 18)
-        for boss in BossNameEnum:
+        self.viewLayout.setContentsMargins(28, 10, 0, 10)
+
+        # TODO 搜索框 筛选条件
+
+        # for boss in BossNameEnum:
+        new_boss = 2  # TODO 增加boss参数，根据版本区最新版本boss数量
+        for i, boss in enumerate(reversed(list(BossNameEnum))):
             button = CheckBox(boss.value, self.view)  # 按钮上展示枚举的value，即描述，可国际化
             button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             # button.setStyleSheet("background: rgba(0, 255, 0, 0.1);")
             self.buttonGroup.append(button)
-            self.viewLayout.addWidget(ClickableButton(button, self))
+            click_button = ClickableButton(button, self)
+            if i < new_boss or boss == BossNameEnum.NightmareMourningAix:
+                click_button.setStyleSheet("background: rgba(0, 255, 0, 0.1);")
+            self.viewLayout.addWidget(click_button)
             button.setProperty(self.configName, boss)
-            button.stateChanged.connect(
-                lambda state, cb=button: self.__onButtonClicked(cb)
-            )
+            button.stateChanged.connect(lambda state, cb=button: self.__onButtonClicked(cb))
+
+        # self.setExpand(True)
 
         self._adjustViewSize()
         self.setValue(paramConfig.get(self.configItem), block_signal=True)  # 调取配置文件中的枚举名列表来初始化当前实例变量的值，并展示到页面上
-        # configItem.valueChanged.connect(self.setValue) # 配置中的值被其他地方修改了，通知这个页面同步刷新
+        configItem.valueChanged.connect(self.setValue) # 配置中的值被其他地方修改了，通知这个页面同步刷新
 
     def __onButtonClicked(self, button: CheckBox):  # 增量修改，全量刷新和保存
         """ button clicked slot """
@@ -811,10 +821,24 @@ class BossNameOptionsSettingCard(ExpandSettingCard):
             except ValueError:
                 pass
 
+    def getChoiceLabelText(self):
+        return ", ".join(self.tr(item.value) for item in self.choiceBosses)
+
     def updateChoiceLabel(self):
         # 更新右上展示选择的枚举的值并翻译
-        self.choiceLabel.setText(", ".join(self.tr(item.value) for item in self.choiceBosses))
+        self.choiceLabel.setText(self.getChoiceLabelText())
         self.choiceLabel.adjustSize()
+
+    def createTopRightInfoBar(self, title: str, content: str, duration: int):
+        InfoBar.success(
+            title=title,
+            content=content,
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP_RIGHT,
+            duration=duration,
+            parent=self.parent().parent().parent().parent().parent()
+        )
 
 
 class BossLevelOptionsSettingCard(ExpandSettingCard):
@@ -1094,3 +1118,319 @@ class ParamInterface(ScrollArea):
         # self.gamePathCard.clicked.connect(
         #     self.__onDownloadFolderCardClicked)
         pass
+
+
+class SimpleCardGroup(QWidget):
+    """ Simple Setting card group """
+
+    # adjustChanged = Signal(int, int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.vBoxLayout = QVBoxLayout(self)
+        self.cardLayout = ExpandLayout()
+
+        self.vBoxLayout.setContentsMargins(0, 0, 0, 0)
+        self.vBoxLayout.setAlignment(Qt.AlignTop)
+        self.vBoxLayout.setSpacing(0)
+        self.cardLayout.setContentsMargins(0, 0, 0, 0)
+        self.cardLayout.setSpacing(2)
+
+        self.vBoxLayout.addSpacing(12)
+        self.vBoxLayout.addLayout(self.cardLayout, 1)
+
+        FluentStyleSheet.SETTING_CARD_GROUP.apply(self)
+
+    def addSettingCard(self, card: QWidget):
+        """ add setting card to group """
+        card.setParent(self)
+        self.cardLayout.addWidget(card)
+        self.adjustSize()
+
+    def addSettingCards(self, cards: List[QWidget]):
+        """ add setting cards to group """
+        for card in cards:
+            self.addSettingCard(card)
+
+    def adjustSize(self):
+        h = self.cardLayout.heightForWidth(self.width()) + 46
+        return self.resize(self.width(), h)
+
+
+class AutoBossParamSettingCard(QWidget):
+    """ Config interface """
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        # self.scrollWidget = QWidget()
+        # self.expandLayout = ExpandLayout(self.scrollWidget)
+
+        self.expandLayout = ExpandLayout(self)
+
+        # Task
+        self.bossGroup = SimpleCardGroup(self)
+
+        self.bossNameCard = BossNameOptionsSettingCard(
+            paramConfig.bossName,
+            FIF.LABEL,
+            # self.tr('选择刷哪些boss'),
+            self.tr('Target Boss Names'),
+            self.tr("可任选。日常可刷梦魇哀声鸷来合成1c3c。梦魇或副本内boss建议单刷。"),
+            # self.tr("Choose any bosses, suggested: one for instances and nightmare, three for open world"),
+            texts=None,
+            parent=self.bossGroup
+        )
+
+        # self.bossNameCard.setExpand(True)
+
+        self.__initWidget()
+
+    def __initWidget(self):
+        self.resize(1000, 800)
+        # self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        # self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        # self.setViewportMargins(0, 0, 0, 0)
+        # self.setWidget(self.scrollWidget)
+        # self.setWidgetResizable(True)
+        self.setObjectName('paramInterface')
+
+        # initialize style sheet
+        # self.scrollWidget.setObjectName('scrollWidget')
+        # self.settingLabel.setObjectName('settingLabel')
+        StyleSheet.SETTING_INTERFACE.apply(self)
+
+        # initialize layout
+        self.__initLayout()
+        # self.__connectSignalToSlot()
+
+    def __initLayout(self):
+        # self.settingLabel.move(36, 30)
+
+        # add cards to group
+        # self.gameGroup.addSettingCard(self.gamePathCard)
+
+        self.bossGroup.addSettingCard(self.bossNameCard)
+        # self.bossGroup.addSettingCard(self.bossLevelCard)
+        # self.bossGroup.addSettingCard(self.comboSequenceCard)
+        # self.bossGroup.addSettingCard(self.autoCombatCard)
+        # self.bossGroup.addSettingCard(self.autoRestartPeriodCard)
+
+        # add setting card group to layout
+        self.expandLayout.setSpacing(28)
+        # self.expandLayout.setContentsMargins(36, 10, 36, 0)
+        self.expandLayout.setContentsMargins(0, 0, 0, 0)
+        self.expandLayout.setAlignment(Qt.AlignTop)
+
+        self.expandLayout.addWidget(self.bossGroup)
+        # self.expandLayout.addWidget(self.gameGroup)
+
+
+class MacroParamSettingCard(ScrollArea):
+    """ Config interface """
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        # configItem
+        self.defaultTemplate = paramConfig.soarToTheBeat_DefaultTemplate
+        self.userTemplate = paramConfig.soarToTheBeat_UserTemplate
+        self.useUserTemplate = paramConfig.soarToTheBeat_UseUserTemplate
+
+        self.scrollWidget = QWidget(self)
+        self.vBoxLayout = QVBoxLayout(self.scrollWidget)
+
+        self.defaultTemplateLabel = QLabel(self.tr("预设模板:"), self.scrollWidget)
+
+        self.templates = self.getTemplates()
+        self.defaultTemplateComboBox = ComboBox(self.scrollWidget)
+        self.defaultTemplateComboBox.addItems(self.templates)
+        self.defaultTemplateComboBox.setCurrentIndex(0)
+
+        self.userTemplateLabel = QLabel(
+            f"自定义模板  目录: {str(self.getMacroSoarToTheBeatPath())}", self.scrollWidget)
+        self.userTemplateLabel.setWordWrap(True)
+
+        self.userTemplateComboBox = ComboBox(self.scrollWidget)
+        self.userTemplateComboBox.addItems(self.getMacroSoarToTheBeatUserFiles())
+        self.userTemplateComboBox.setCurrentIndex(-1)
+
+        self.hBoxLayout = QHBoxLayout(self.scrollWidget)
+
+        self.refreshButton = PushButton(self.tr("刷新"), self.scrollWidget, FluentIcon.SYNC)
+        self.useUserTemplateButton = CheckBox(self.tr('使用自定义模板'), self.scrollWidget)
+        self.aboutFlyoutButton = PushButton(self.tr('关于'), self.scrollWidget)
+
+        self.escLabel = QLabel(self.tr("停止快捷键: ESC"), self.scrollWidget)
+
+        self.__initWidget()
+        self.__initParam()
+
+    def __initWidget(self):
+        self.resize(1000, 800)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setViewportMargins(0, 0, 0, 0)
+        self.setWidget(self.scrollWidget)
+        self.setWidgetResizable(True)
+        # self.setObjectName('paramInterface')
+
+        self.refreshButton.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+
+        # initialize style sheet
+        self.scrollWidget.setObjectName('scrollWidget')
+        StyleSheet.PARAM_INTERFACE.apply(self)
+
+        # initialize layout
+        self.__initLayout()
+        self.__connectSignalToSlot()
+
+    def __initLayout(self):
+        self.hBoxLayout.addWidget(self.refreshButton)
+        self.hBoxLayout.addWidget(self.useUserTemplateButton)
+        self.hBoxLayout.addWidget(self.aboutFlyoutButton)
+        self.hBoxLayout.addSpacing(20)
+        self.hBoxLayout.addWidget(self.escLabel)
+        self.hBoxLayout.addStretch()
+        self.hBoxLayout.setSpacing(15)
+        # self.hBoxLayout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+
+        self.vBoxLayout.addWidget(self.defaultTemplateLabel)
+        self.vBoxLayout.addWidget(self.defaultTemplateComboBox)
+        self.vBoxLayout.addWidget(self.userTemplateLabel)
+        self.vBoxLayout.addWidget(self.userTemplateComboBox)
+        self.vBoxLayout.addLayout(self.hBoxLayout)
+        self.vBoxLayout.setSpacing(11)
+        self.vBoxLayout.setContentsMargins(36, 10, 36, 10)
+        self.vBoxLayout.setAlignment(Qt.AlignTop)
+
+    def __connectSignalToSlot(self):
+        self.defaultTemplateComboBox.currentTextChanged.connect(self.onDefaultTemplateComboboxTextChanged)
+        self.userTemplateComboBox.currentTextChanged.connect(self.onUserTemplateComboboxTextChanged)
+        self.refreshButton.clicked.connect(self.onRefreshButtonClicked)
+        self.useUserTemplateButton.clicked.connect(self.onUseUserTemplateButtonClicked)
+        self.aboutFlyoutButton.clicked.connect(self.showAboutFlyout)
+        # globalSignal.taskInfoBarSignal.connect(self.showTaskInfoBar)  # 多个对象会重复多次
+
+    def __initParam(self):
+        text = self.defaultTemplate.value
+        if text != self.defaultTemplateComboBox.currentText():
+            index = self.defaultTemplateComboBox.findText(text)
+            if index >= 0:
+                self.defaultTemplateComboBox.blockSignals(True)
+                self.defaultTemplateComboBox.setCurrentIndex(index)
+                self.defaultTemplateComboBox.blockSignals(False)
+            else:
+                self.defaultTemplateComboBox.setCurrentIndex(0)
+
+        text = self.userTemplate.value
+        if text != self.userTemplateComboBox.currentText():
+            index = self.userTemplateComboBox.findText(text)
+            if index >= 0:
+                self.userTemplateComboBox.blockSignals(True)
+                self.userTemplateComboBox.setCurrentIndex(index)
+                self.userTemplateComboBox.blockSignals(False)
+            else:
+                self.userTemplateComboBox.setCurrentIndex(-1)
+
+        if self.useUserTemplate.value is True:
+            self.useUserTemplateButton.blockSignals(True)
+            self.useUserTemplateButton.setChecked(True)
+            self.useUserTemplateButton.blockSignals(False)
+
+    def onDefaultTemplateComboboxTextChanged(self, text):
+        paramConfig.set(self.defaultTemplate, text if text else None)
+
+    def onUserTemplateComboboxTextChanged(self, text):
+        paramConfig.set(self.userTemplate, text if text else None)
+
+    def onUseUserTemplateButtonClicked(self):
+        paramConfig.set(self.useUserTemplate, self.useUserTemplateButton.isChecked())
+
+    def onRefreshButtonClicked(self):
+        fileNames = self.getMacroSoarToTheBeatUserFiles()
+        logger.debug(f"fileNames: {fileNames}")
+        currentText = self.userTemplateComboBox.currentText()
+        logger.debug(f"currentText: {currentText}")
+        self.userTemplateComboBox.clear()
+        self.userTemplateComboBox.addItems(fileNames)
+        if currentText:
+            self.userTemplateComboBox.setCurrentText(currentText)
+        if self.userTemplateComboBox.currentText() != currentText:
+            self.userTemplateComboBox.setCurrentIndex(-1)
+            paramConfig.set(self.userTemplate, None)
+        self.createTopRightInfoBar(self.tr("Refresh: "), self.tr("Successful"), 300)
+
+    def getMacroSoarToTheBeatPath(self):
+        from src.util import file_util
+        path = file_util.get_assets_macro_SoarToTheBeat()
+        return path
+
+    def getMacroSoarToTheBeatUserFiles(self):
+        path = self.getMacroSoarToTheBeatPath()
+        fileNames = [f.name for f in path.glob('*.txt')]
+        logger.debug(f"fileNames: {fileNames}")
+        return fileNames
+
+    def getTemplates(self):
+        templates = [
+            "02_星云漫游_《论灵魂De Anima》_困难.txt",
+            "02_星云漫游_《论灵魂De Anima》_普通.txt",
+            "03_星云漫游_《万千星语》_困难.txt",
+            "03_星云漫游_《万千星语》_普通.txt",
+            "04_星云漫游_《此刻寻光星间》_困难.txt",
+            "04_星云漫游_《此刻寻光星间》_普通.txt",
+            "05_星云漫游_《致那暖明黄金》_困难.txt",
+            "05_星云漫游_《致那暖明黄金》_普通.txt",
+            "06_行星探索_《悠忽舞于梦中》_困难.txt",
+            "06_行星探索_《悠忽舞于梦中》_普通.txt",
+            "07_行星探索_《愿戴荣光坠入天渊》_普通.txt",
+            "08_行星探索_《Daisy Crown》_普通.txt",
+            "09_行星探索_《逐光筑昼》_普通.txt",
+            "10_恒星冒险_《光耀诸天群海》_普通.txt",
+            "11_恒星冒险_《于无羁之昼点亮真彩(Throttle Up!)》_普通.txt",
+            "12_恒星冒险_《烈阳啊，请见我真名》_普通.txt",
+            "13_恒星冒险_《死秽失乐福音》_普通.txt",
+            "14_Musedash_《雨后甜点》_普通.txt",
+            "15_Musedash_《Final Step！》_普通.txt",
+            "16_Musedash_《Cthugha》_普通.txt",
+        ]
+        # 定义难度优先级映射
+        difficulty_order = {"简单": 0, "普通": 1, "困难": 2}
+
+        def sort_key(filename):
+            # 提取序号（前两个字符）
+            num = int(filename[:2])
+
+            # 提取难度（在最后一个下划线和 .txt 之间）
+            parts = filename[:-4].split('_')  # 去掉.txt后按_分割
+            difficulty = parts[-1]  # 最后一部分就是难度
+
+            # 返回排序元组
+            return num, difficulty_order.get(difficulty, 9)
+
+        templates.sort(key=sort_key)
+        return templates
+
+    def createTopRightInfoBar(self, title: str, content: str, duration: int):
+        InfoBar.success(
+            title=title,
+            content=content,
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP_LEFT,
+            duration=duration,
+            parent=self
+        )
+
+    def showAboutFlyout(self):
+        Flyout.create(
+            # icon=InfoBarIcon.INFORMATION,
+            title='关于:',
+            content=self.tr(
+                '模板为人工录制，因设备、网络等多方面影响存在少许正负延迟，对不上轴ESC重跑即可，都能3S全奖励。\n' +
+                '作者也打不出100%完美，部分歌曲只有90%+，欢迎使用录制功能，将你的宏文件、结算分数、按键设置截图打包分享到群里，由群主合进脚本内'
+            ),
+            target=self.aboutFlyoutButton,
+            parent=self.window()
+        )

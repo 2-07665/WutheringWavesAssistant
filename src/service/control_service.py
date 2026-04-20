@@ -53,7 +53,11 @@ class Win32GameControlServiceImpl(GameControlService, BaseControlService):
         keymouse_util.click(self._window_service.window, seconds=0.05)
         return self
 
-    def click(self, x: int = 0, y: int = 0):
+    def click(self, *args):
+        if len(args) == 2:
+            x, y = args
+        else:
+            x, y = args[0]
         keymouse_util.click(self._window_service.window, x, y, seconds=0.05)
         return self
 

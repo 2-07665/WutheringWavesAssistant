@@ -1,23 +1,25 @@
+import json
 import logging
 import math
-import os
 import threading
 import time
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import datetime
-from multiprocessing import Process, Event
-from typing import Iterable, Any, TypeVar, Callable, Mapping
+from multiprocessing import Process
+from typing import Iterable, Any, TypeVar, Callable, Mapping, Optional
 
 import psutil
 import win32gui
-from pynput.mouse import Controller
 
+from core.geometry import AnchorPoint, Align
 from src.config import logging_config
 from src.config.gui_config import ParamConfig
 from src.core.contexts import Context
 from src.core.exceptions import ScreenshotError
 from src.core.interface import ImgService, OCRService, ControlService, PageEventService, WindowService
-from src.util import hwnd_util, keymouse_util
+from src.core.workflow import TaskSpec, IPCManager, NodeContext
+from src.util import hwnd_util, keymouse_util, file_util
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +37,7 @@ class ProcessTask(ABC):
         self._start_time: datetime | None = None
         self._end_time: datetime | None = None
         self._restart_time_list: list[datetime] = []
-        self._process: Process | None = None
+        self._process: Process | threading.Thread | None = None
 
     @abstractmethod
     def get_task(self, *args) -> Callable[..., None] | None:
@@ -73,13 +75,12 @@ class ProcessTask(ABC):
             return
         try:
             if not self._process.is_alive():
-                return self
+                return
             self._process.terminate()
             if timeout > 0:
                 self._process.join(timeout)
         except Exception:
             logger.exception(f"任务[{self.name}]结束失败")
-        return self
 
     def join(self):
         self._process.join()
@@ -97,6 +98,43 @@ class ProcessTask(ABC):
         logger.warning(f"[{self.name}] 任务重启，上次重启时间: {start_time_last.strftime("%Y-%m-%d %H:%M:%S")}")
         self._restart_time_list.append(restart_time)
         self._process = Process(
+            target=self.get_task(), args=self.args, kwargs=self.kwargs, name=self.name, daemon=self.daemon)
+        self._process.start()
+
+
+class ThreadTask(ProcessTask):
+
+    def start(self):
+        self._process = threading.Thread(
+            target=self.get_task(), args=self.args, kwargs=self.kwargs, name=self.name, daemon=self.daemon)
+        self._start_time = datetime.now()
+        self._process.start()
+        return self
+
+    def _stop(self, timeout=3):
+        if self._process is None:
+            return
+        try:
+            if not self._process.is_alive():
+                return
+            # self._process.terminate()
+            if timeout > 0:
+                self._process.join(timeout)
+        except Exception:
+            logger.exception(f"任务[{self.name}]结束失败")
+
+    def restart(self, timeout=3):
+        self._stop(timeout=timeout)
+        if len(self._restart_time_list) > 0:
+            start_time_last = self._restart_time_list[-1]
+        else:
+            start_time_last = self._start_time
+        restart_time = datetime.now()
+        logger.warning(f"[{self.name}] 任务重启，上次重启时间: {start_time_last.strftime("%Y-%m-%d %H:%M:%S")}")
+        self._restart_time_list.append(restart_time)
+        # self._process = Process(
+        #     target=self.get_task(), args=self.args, kwargs=self.kwargs, name=self.name, daemon=self.daemon)
+        self._process = threading.Thread(
             target=self.get_task(), args=self.args, kwargs=self.kwargs, name=self.name, daemon=self.daemon)
         self._process.start()
 
@@ -126,6 +164,30 @@ class DailyActivityProcessTask(ProcessTask):
         return daily_activity_task_run
 
 
+class EchoMergeProcessTask(ProcessTask):
+    def get_task(self, *args) -> Callable[..., None] | None:
+        return echo_merge_task_run
+
+
+class SoarToTheBeatMacroReplayTask(ThreadTask):
+    def get_task(self, *args) -> Callable[..., None] | None:
+        return soar_to_the_beat_macro_replay_task
+
+
+class SoarToTheBeatMacroRecordTask(ThreadTask):
+    def get_task(self, *args) -> Callable[..., None] | None:
+        return soar_to_the_beat_macro_record_task
+
+@dataclass
+class TaskMsg:
+    task_name: Optional[str] = None
+    title: Optional[str] = None
+    content: Optional[str] = None
+    position: Optional[str] = None
+    duration: Optional[int] = None
+    parent: Optional[str] = None
+
+
 class ClockAction:
     """定时执行函数"""
 
@@ -144,13 +206,10 @@ class ClockAction:
                 pass
 
 
-def create_parent_monitor(event: Event, parent_pid: str):
-    if not parent_pid:
-        return
+def create_parent_monitor(event, pid: int):
 
     def run():
         try:
-            pid = int(parent_pid)
             # 获取父进程
             parent_process = psutil.Process(pid)
         except Exception as e:
@@ -174,12 +233,10 @@ def create_parent_monitor(event: Event, parent_pid: str):
     return monitor_thread
 
 
-def create_mouse_reset_monitor(event: Event, parent_pid: str, **kwargs):
-    if not parent_pid:  # pid不存在就不用启动
-        return
+def create_mouse_reset_monitor(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
 
     def run(**run_kwargs):
-        mouse_reset_task_run(event, **run_kwargs)
+        mouse_reset_task_run(event, spec, ipc, **run_kwargs)
 
     monitor_thread = threading.Thread(target=run, kwargs=kwargs, name="MouseResetMonitorThread")
     monitor_thread.daemon = True
@@ -187,12 +244,10 @@ def create_mouse_reset_monitor(event: Event, parent_pid: str, **kwargs):
     return monitor_thread
 
 
-def mouse_reset_task_run(event: Event, **kwargs):
-    for k, v in kwargs.items():
-        if isinstance(v, str):
-            os.environ[k] = v
-    logging_config.setup_logging(kwargs.get("LOG_QUEUE"))
+def mouse_reset_task_run(event, spec, ipc, **kwargs):
+    logging_config.setup_logging(ipc.log_queue)
     logger.info("鼠标重置任务开始运行")
+    from pynput.mouse import Controller
     mouse = Controller()
     last_position = mouse.position
     hwnd = None
@@ -229,25 +284,21 @@ def mouse_reset_task_run(event: Event, **kwargs):
         logger.info("鼠标重置任务结束")
 
 
-def auto_boss_task_run(event: Event, **kwargs):
+def auto_boss_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
     try:
         from src.core.injector import Container
 
-        for k, v in kwargs.items():
-            if isinstance(v, str):
-                os.environ[k] = v
-        logging_config.setup_logging(kwargs.get("LOG_QUEUE"))
-        # logging_config.setup_logging_test(kwargs.get("LOG_QUEUE"))
-        logger.debug("kwargs: %s", kwargs)
-        logger.debug(os.environ)
+        logging_config.setup_logging(ipc.log_queue)
+        logger.debug(f"spec: {json.dumps(spec.__dict__)}")
         logger.info("刷boss任务进程开始运行")
 
         context = Context()
+        context.spec = spec
         # 从快照还原配置
-        if param_config_snapshot := kwargs.get("PARAM_CONFIG_SNAPSHOT"):
-            context.param_config = ParamConfig.build(content=param_config_snapshot)
-        if game_path := kwargs.get("GAME_PATH"):
-            context.param_config.gamePath = game_path
+        if spec.param_config:
+            context.param_config = ParamConfig.build(content=spec.param_config)
+        if spec.game_path:
+            context.param_config.gamePath = spec.game_path
         # 新旧配置兼容
         context.app_config.TargetBoss = context.param_config.get_boss_name_list()
         logger.info("Boss Rush: %s", context.app_config.TargetBoss)
@@ -267,7 +318,7 @@ def auto_boss_task_run(event: Event, **kwargs):
         # # 3. 取消游戏窗口的置顶状态
         # hwnd_util.set_window_not_topmost(window_service.window)
         # # 4. 移动窗口
-        gui_win_id = int(kwargs.get("GUI_WIN_ID"))
+        gui_win_id = spec.gui_win_id
         # hwnd_util.set_window_left_top_and_below_another(window_service.window, gui_win_id)
         hwnd_util.set_window_left_top(window_service.window)
         # 5. 将鼠标移回原位
@@ -276,10 +327,9 @@ def auto_boss_task_run(event: Event, **kwargs):
         context.boss_task_ctx.gui_win_id = gui_win_id
 
         time.sleep(0.2)
-        logger.debug(game_path)
-        parent_pid = kwargs.get("PARENT_PID")
-        create_parent_monitor(event, parent_pid)
-        create_mouse_reset_monitor(event, parent_pid, **kwargs)
+        logger.debug(spec.game_path)
+        create_parent_monitor(event, spec.leader_pid)
+        create_mouse_reset_monitor(event, spec, ipc, **kwargs)
         clock_action = ClockAction(control_service.activate, 3.0)
 
         logger.debug("-------- run ----------")
@@ -321,23 +371,20 @@ def auto_boss_task_run(event: Event, **kwargs):
         logger.exception(e)
 
 
-def auto_pickup_task_run(event: Event, **kwargs):
+def auto_pickup_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
     from src.core.injector import Container
 
-    for k, v in kwargs.items():
-        if isinstance(v, str):
-            os.environ[k] = v
-    logging_config.setup_logging(kwargs.get("LOG_QUEUE"))
-    logger.debug("kwargs: %s", kwargs)
-    logger.debug(os.environ)
+    logging_config.setup_logging(ipc.log_queue)
+    logger.debug(f"spec: {json.dumps(spec.__dict__)}")
     logger.info("自动拾取任务进程开始运行")
 
     context = Context()
+    context.spec = spec
     # 从快照还原配置
-    if param_config_snapshot := kwargs.get("PARAM_CONFIG_SNAPSHOT"):
-        context.param_config = ParamConfig.build(content=param_config_snapshot)
-    if game_path := kwargs.get("GAME_PATH"):
-        context.param_config.gamePath = game_path
+    if spec.param_config:
+        context.param_config = ParamConfig.build(content=spec.param_config)
+    if spec.game_path:
+        context.param_config.gamePath = spec.game_path
     # 新旧配置兼容
     context.app_config.TargetBoss = context.param_config.get_boss_name_list()
     logger.debug("TargetBoss: %s", context.app_config.TargetBoss)
@@ -352,10 +399,9 @@ def auto_pickup_task_run(event: Event, **kwargs):
 
     # hwnd_util.set_window_left_top(window_service.window)
     # time.sleep(0.2)
-    logger.debug(game_path)
-    parent_pid = kwargs.get("PARENT_PID")
-    create_parent_monitor(event, parent_pid)
-    # create_mouse_reset_monitor(event, parent_pid, **kwargs)
+    logger.debug(spec.game_path)
+    create_parent_monitor(event, spec.leader_pid)
+    # create_mouse_reset_monitor(event, spec.leader_pid, **kwargs)
     clock_action = ClockAction(control_service.activate, 3.0)
 
     page_event_service: PageEventService = container.auto_pickup_service()
@@ -381,23 +427,20 @@ def auto_pickup_task_run(event: Event, **kwargs):
             pass
 
 
-def auto_story_task_run(event: Event, **kwargs):
+def auto_story_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
     from src.core.injector import Container
 
-    for k, v in kwargs.items():
-        if isinstance(v, str):
-            os.environ[k] = v
-    logging_config.setup_logging(kwargs.get("LOG_QUEUE"))
-    logger.debug("kwargs: %s", kwargs)
-    logger.debug(os.environ)
+    logging_config.setup_logging(ipc.log_queue)
+    logger.debug(f"spec: {json.dumps(spec.__dict__)}")
     logger.info("自动剧情任务进程开始运行")
 
     context = Context()
+    context.spec = spec
     # 从快照还原配置
-    if param_config_snapshot := kwargs.get("PARAM_CONFIG_SNAPSHOT"):
-        context.param_config = ParamConfig.build(content=param_config_snapshot)
-    if game_path := kwargs.get("GAME_PATH"):
-        context.param_config.gamePath = game_path
+    if spec.param_config:
+        context.param_config = ParamConfig.build(content=spec.param_config)
+    if spec.game_path:
+        context.param_config.gamePath = spec.game_path
     # 新旧配置兼容
     context.app_config.TargetBoss = context.param_config.get_boss_name_list()
     logger.debug("TargetBoss: %s", context.app_config.TargetBoss)
@@ -412,10 +455,9 @@ def auto_story_task_run(event: Event, **kwargs):
 
     # hwnd_util.set_window_left_top(window_service.window)
     # time.sleep(0.2)
-    logger.debug(game_path)
-    parent_pid = kwargs.get("PARENT_PID")
-    create_parent_monitor(event, parent_pid)
-    # create_mouse_reset_monitor(event, parent_pid, **kwargs)
+    logger.debug(spec.game_path)
+    create_parent_monitor(event, spec.leader_pid)
+    # create_mouse_reset_monitor(event, spec.leader_pid, **kwargs)
     clock_action = ClockAction(control_service.activate, 3.0)
 
     page_event_service: PageEventService = container.auto_story_service()
@@ -444,23 +486,20 @@ def auto_story_task_run(event: Event, **kwargs):
             pass
 
 
-def daily_activity_task_run(event: Event, **kwargs):
+def daily_activity_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
     from src.core.injector import Container
 
-    for k, v in kwargs.items():
-        if isinstance(v, str):
-            os.environ[k] = v
-    logging_config.setup_logging(kwargs.get("LOG_QUEUE"))
-    logger.debug("kwargs: %s", kwargs)
-    logger.debug(os.environ)
+    logging_config.setup_logging(ipc.log_queue)
+    logger.debug(f"spec: {json.dumps(spec.__dict__)}")
     logger.info("每日任务进程开始运行")
 
     context = Context()
+    context.spec = spec
     # 从快照还原配置
-    if param_config_snapshot := kwargs.get("PARAM_CONFIG_SNAPSHOT"):
-        context.param_config = ParamConfig.build(content=param_config_snapshot)
-    if game_path := kwargs.get("GAME_PATH"):
-        context.param_config.gamePath = game_path
+    if spec.param_config:
+        context.param_config = ParamConfig.build(content=spec.param_config)
+    if spec.game_path:
+        context.param_config.gamePath = spec.game_path
     # 新旧配置兼容
     context.app_config.TargetBoss = context.param_config.get_boss_name_list()
     logger.debug("TargetBoss: %s", context.app_config.TargetBoss)
@@ -475,10 +514,9 @@ def daily_activity_task_run(event: Event, **kwargs):
 
     hwnd_util.set_window_left_top(window_service.window)
     time.sleep(0.2)
-    logger.debug(game_path)
-    parent_pid = kwargs.get("PARENT_PID")
-    create_parent_monitor(event, parent_pid)
-    create_mouse_reset_monitor(event, parent_pid, **kwargs)
+    logger.debug(spec.game_path)
+    create_parent_monitor(event, spec.leader_pid)
+    create_mouse_reset_monitor(event, spec.leader_pid, **kwargs)
     # clock_action = ClockAction(control_service.activate, 3.0)
 
     page_event_service: PageEventService = container.daily_activity_service()
@@ -500,8 +538,181 @@ def daily_activity_task_run(event: Event, **kwargs):
             pass
 
 
-if __name__ == '__main__':
-    _stop_event = Event()
-    _stop_event.set()
-    # AutoBossProcessTask.build(args=(_stop_event,), daemon=True).start()
-    MouseResetProcessTask.build(args=(_stop_event,), daemon=True).start().join()
+def task_init(event, spec: TaskSpec, ipc: IPCManager, is_thread=False, **kwargs):
+    from src.core.injector import Container
+
+    if not is_thread:
+        logging_config.setup_logging(ipc.log_queue)
+    logger.debug(f"spec: {json.dumps(spec.__dict__)}")
+
+    ctx = NodeContext()
+    ctx.spec = spec
+    ctx.ipc = ipc
+    ctx.runtime.stop_event = event
+
+    container = Container.build(ctx)
+    logger.debug("Create application context")
+
+    return ctx, container
+
+
+def echo_merge_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
+    try:
+        ctx, container = task_init(event, spec, ipc, **kwargs)
+        logger.info("声骸融合任务进程开始运行")
+
+        time.sleep(0.2)
+        logger.debug(spec.game_path)
+        create_parent_monitor(event, spec.leader_pid)
+        create_mouse_reset_monitor(event, spec, ipc, **kwargs)
+        clock_action = ClockAction(ctx.control_service.activate, 3.0)
+
+        logger.debug("-------- run ----------")
+        count = 0
+
+        from src.service.echo_merge_workflow import EchoMergeWorkflow
+        workflow = EchoMergeWorkflow(ctx)
+
+        try:
+            try:
+                count += 1
+                clock_action.action()
+
+                workflow.execute()
+            except ScreenshotError:
+                try:
+                    logger.warning("截图异常，关闭游戏")
+                    hwnd_util.force_close_process(ctx.window_service.window)
+                except Exception:
+                    logger.error("关闭游戏时异常")
+                raise
+        except KeyboardInterrupt:
+            logger.warning("KeyboardInterrupt")
+        except Exception as e:
+            logger.exception(e)
+
+            ctx.ipc.event_queue.put({
+                "task": {"SoarToTheBeatMacroReplayTask": ["failed"]}
+            }, block=True)
+        finally:
+            try:
+                keymouse_util.mouse_left_up(ctx.window_service.window, 0, 0)
+                keymouse_util.mouse_right_up(ctx.window_service.window, 0, 0)
+                keymouse_util.key_up(ctx.window_service.window, "W")
+            except Exception:
+                pass
+            logger.info("声骸融合任务进程结束")
+    except Exception as e:
+        logger.exception(e)
+
+
+def soar_to_the_beat_macro_replay_task(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
+    try:
+        ctx, container = task_init(event, spec, ipc, is_thread=True, **kwargs)
+        logger.info("自动音游任务线程开始运行")
+
+        time.sleep(0.2)
+        logger.debug(spec.game_path)
+
+        if ctx.param_config.useUserTemplate:
+            if not ctx.param_config.userTemplate:
+                logger.error("勾选使用自定义，但未选择自定义模板")
+                ctx.ipc.event_queue.put({
+                    "task": {"SoarToTheBeatMacroReplayTask": ["failed", "勾选使用自定义，但未选择自定义模板"]}
+                }, block=True)
+                time.sleep(0.2)
+                return
+            file_name = file_util.get_assets_macro_SoarToTheBeat(ctx.param_config.userTemplate)
+        else:
+            if not ctx.param_config.defaultTemplate:
+                logger.error("未选择模板文件")
+                ctx.ipc.event_queue.put({
+                    "task": {"SoarToTheBeatMacroReplayTask": ["failed", "未选择模板文件"]}
+                }, block=True)
+                time.sleep(0.2)
+                return
+            file_name = file_util.get_assets_macro_SoarToTheBeat_template(ctx.param_config.defaultTemplate)
+        logger.debug(f"load: {file_name}")
+
+        try:
+            from src.util import macro_replay_util
+            macro_replay_util.run(file_name, ctx.window_service.window, macro_point_scaler(ctx))
+
+            ctx.ipc.event_queue.put({
+                "task": {"SoarToTheBeatMacroReplayTask": ["finished"]}
+            }, block=True)
+            time.sleep(0.2)
+        except KeyboardInterrupt:
+            logger.warning("KeyboardInterrupt")
+        except Exception as e:
+            logger.exception(e)
+
+            ctx.ipc.event_queue.put({
+                "task": {"SoarToTheBeatMacroReplayTask": ["failed"]}
+            }, block=True)
+            time.sleep(0.2)
+        finally:
+            try:
+                keymouse_util.mouse_left_up(ctx.window_service.window, 0, 0)
+                keymouse_util.mouse_right_up(ctx.window_service.window, 0, 0)
+                keymouse_util.key_up(ctx.window_service.window, "W")
+            except Exception:
+                pass
+            logger.info("自动音游任务线程结束")
+    except Exception as e:
+        logger.exception(e)
+
+
+def soar_to_the_beat_macro_record_task(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
+    try:
+        ctx, container = task_init(event, spec, ipc, is_thread=True, **kwargs)
+        logger.info("按键宏录制任务线程开始运行")
+
+        time.sleep(0.2)
+        logger.debug(spec.game_path)
+
+        filename = f"Record_{datetime.now().strftime('%Y%m%d%H%M%S_%f')[:19]}.txt"
+        filename = str(file_util.get_assets_macro_SoarToTheBeat().joinpath(filename))
+        logger.debug(f"filename: {filename}")
+
+        try:
+            from src.util import macro_record_util
+            is_saved = macro_record_util.run(filename, ctx.window_service.window, macro_point_scaler(ctx))
+
+            ctx.ipc.event_queue.put({
+                "task": {"SoarToTheBeatMacroRecordTask": ["finished", filename] if is_saved else ["finished"]}
+            }, block=True)
+            time.sleep(0.2)
+        except KeyboardInterrupt:
+            logger.warning("KeyboardInterrupt")
+        except Exception as e:
+            logger.exception(e)
+
+            ctx.ipc.event_queue.put({
+                "task": {"SoarToTheBeatMacroRecordTask": ["failed"]}
+            }, block=True)
+            time.sleep(0.2)
+        finally:
+            try:
+                keymouse_util.mouse_left_up(ctx.window_service.window, 0, 0)
+                keymouse_util.mouse_right_up(ctx.window_service.window, 0, 0)
+                keymouse_util.key_up(ctx.window_service.window, "W")
+            except Exception:
+                pass
+            logger.info("按键宏录制任务线程结束")
+    except Exception as e:
+        logger.exception(e)
+
+
+def macro_point_scaler(ctx):
+    from src.util import macro_replay_util
+    points_1280_720 = macro_replay_util.TriggerController.POINTS_1280_720
+    points = [ctx.scaler.as_point(AnchorPoint(p[0], p[1], Align.Top | Align.Right)).as_tuple() for p in points_1280_720]
+    return points
+
+
+# if __name__ == '__main__':
+#     _stop_event = Event()
+#     _stop_event.set()
+#     # AutoBossProcessTask.build(args=(_stop_event,), daemon=True).start()
+#     MouseResetProcessTask.build(args=(_stop_event,), daemon=True).start().join()

@@ -109,6 +109,7 @@ class TerminalInterface(GalleryInterface):
             subtitle=self.logFIle,
             parent=parent,
             needButtonLayout=False,
+            subtitleSelectableByMouse=True,
         )
         self.setObjectName('terminalInterface')
 

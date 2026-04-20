@@ -12,10 +12,14 @@ logger = logging.getLogger(__name__)
 from importlib.metadata import version
 from packaging.version import Version
 
+# det 找出文本框位置
+# rec 识别具体内容，根据det文本框的位置裁剪出文本图片，识别出具体文字
+# cls 判断文字方向
+
 _rapidocr_version = Version(version("rapidocr"))
 if _rapidocr_version < Version("3.0.0"):
     from rapidocr import RapidOCR, VisRes
-    from rapidocr.utils import RapidOCROutput  # v2.0.6
+    # from rapidocr.utils import RapidOCROutput  # v2.0.6
 
     _COMMON_PARAMS = {
         "Global.use_cls": False,
@@ -43,12 +47,19 @@ if _rapidocr_version < Version("3.0.0"):
     }
 else:
     from rapidocr import RapidOCR, VisRes, EngineType
-    from rapidocr.utils.output import RapidOCROutput  # v3.5.0
+    # from rapidocr.utils.output import RapidOCROutput  # v3.5.0
 
     _COMMON_PARAMS = {
+        # # 如果输入图像的最大边大于 max_side_len，则会按宽高比，将最大边缩放到 max_side_len。默认为 2000 px
+        # "Global.max_side_len": 2560,
+        # # 如果输入图像的最小边小于 min_side_len，则会按宽高比，将最小边缩放到 min_side_len。默认为 30 px
+        # "Global.min_side_len": 30,
         "Global.use_cls": False,
         "Global.width_height_ratio": -1,
         "Global.log_level": "error",  # debug / info / warning / error / critical
+        # 限制图像的最小边长度还是最大边为 limit_side_len。
+        # 示例解释：当 limit_type=min 和 limit_side_len=736 时，
+        # 图像最小边小于 736 时，会将图像最小边拉伸到 736，另一边则按图像原始比例等比缩放。取值范围为：[min, max]，默认值为 min
         "Det.limit_type": "min",
         "Det.limit_side_len": 0,
     }
@@ -107,12 +118,12 @@ def model_warmup(engine: RapidOCR, batch_size: int = 1, min_size: int = 10, max_
     logger.info("Model warmup completed")
 
 
-def print_ocr_result(output: RapidOCROutput):
+def print_ocr_result(output):
     for i in range(output.boxes.shape[0]):
         logger.debug("score: %s,\ttext: '%s',\tbox: %s", output.scores[i], output.txts[i], list(output.boxes[i]))
 
 
-def draw_ocr_result(output: RapidOCROutput) -> np.ndarray:
+def draw_ocr_result(output) -> np.ndarray:
     if output.boxes is None:
         return output.img
     vis = VisRes()
