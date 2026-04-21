@@ -1256,12 +1256,13 @@ class MacroParamSettingCard(ScrollArea):
         self.userTemplateComboBox.setCurrentIndex(-1)
 
         self.hBoxLayout = QHBoxLayout(self.scrollWidget)
+        # self.hBoxLayout = FlowLayout(self.scrollWidget)
 
         self.refreshButton = PushButton(self.tr("刷新"), self.scrollWidget, FluentIcon.SYNC)
         self.useUserTemplateButton = CheckBox(self.tr('使用自定义模板'), self.scrollWidget)
         self.aboutFlyoutButton = PushButton(self.tr('关于'), self.scrollWidget)
 
-        self.escLabel = QLabel(self.tr("停止快捷键: ESC"), self.scrollWidget)
+        self.escLabel = QLabel(self.tr("保存/停止快捷键: ESC"), self.scrollWidget)
 
         self.__initWidget()
         self.__initParam()
@@ -1289,11 +1290,10 @@ class MacroParamSettingCard(ScrollArea):
         self.hBoxLayout.addWidget(self.refreshButton)
         self.hBoxLayout.addWidget(self.useUserTemplateButton)
         self.hBoxLayout.addWidget(self.aboutFlyoutButton)
-        self.hBoxLayout.addSpacing(20)
+        # self.hBoxLayout.addSpacing(20)
         self.hBoxLayout.addWidget(self.escLabel)
         self.hBoxLayout.addStretch()
         self.hBoxLayout.setSpacing(15)
-        # self.hBoxLayout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
         self.vBoxLayout.addWidget(self.defaultTemplateLabel)
         self.vBoxLayout.addWidget(self.defaultTemplateComboBox)
@@ -1314,24 +1314,30 @@ class MacroParamSettingCard(ScrollArea):
 
     def __initParam(self):
         text = self.defaultTemplate.value
-        if text != self.defaultTemplateComboBox.currentText():
+        is_change = False
+        if text and text != self.defaultTemplateComboBox.currentText():
             index = self.defaultTemplateComboBox.findText(text)
             if index >= 0:
                 self.defaultTemplateComboBox.blockSignals(True)
                 self.defaultTemplateComboBox.setCurrentIndex(index)
                 self.defaultTemplateComboBox.blockSignals(False)
-            else:
-                self.defaultTemplateComboBox.setCurrentIndex(0)
+                is_change = True
+        # 没找到匹配的选项，更新成第一个
+        if not is_change:
+            self.onDefaultTemplateComboboxTextChanged(self.defaultTemplateComboBox.currentText())
 
         text = self.userTemplate.value
-        if text != self.userTemplateComboBox.currentText():
+        is_change = False
+        if text and text != self.userTemplateComboBox.currentText():
             index = self.userTemplateComboBox.findText(text)
             if index >= 0:
                 self.userTemplateComboBox.blockSignals(True)
                 self.userTemplateComboBox.setCurrentIndex(index)
                 self.userTemplateComboBox.blockSignals(False)
-            else:
-                self.userTemplateComboBox.setCurrentIndex(-1)
+                is_change = True
+        # 没找到匹配的选项，更新成空
+        if not is_change:
+            self.onUserTemplateComboboxTextChanged(None)
 
         if self.useUserTemplate.value is True:
             self.useUserTemplateButton.blockSignals(True)
@@ -1428,8 +1434,10 @@ class MacroParamSettingCard(ScrollArea):
             # icon=InfoBarIcon.INFORMATION,
             title='关于:',
             content=self.tr(
-                '模板为人工录制，因设备、网络等多方面影响存在少许正负延迟，对不上轴ESC重跑即可，都能3S全奖励。\n' +
-                '作者也打不出100%完美，部分歌曲只有90%+，欢迎使用录制功能，将你的宏文件、结算分数、按键设置截图打包分享到群里，由群主合进脚本内'
+                '模板为人工录制，本身并不完美，因设备、网络等影响，可能存在极小的正负延迟，对不上轴ESC重跑即可，都能3S全奖励。' +
+                '作者也打不出100%，部分歌曲只有90%+，欢迎使用录制功能，将你的模板文件、结算分数、按键设置截图打包分享到群里，由群主校准后合进脚本内。\n' +
+                '角色选陆赫斯/莫宁，默认按键0延迟。\n' +
+                '请勿直接修改预设模板，有问题先检查选项是否勾选正确'
             ),
             target=self.aboutFlyoutButton,
             parent=self.window()

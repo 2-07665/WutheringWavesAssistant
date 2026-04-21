@@ -367,15 +367,19 @@ class TriggerController:
 # =========================
 
 def start_esc(player: MacroPlayer):
-    def loop():
-        while True:
+    def loop(event):
+        while event.is_set():
             if user32.GetAsyncKeyState(0x1B) & 0x8000:
                 player.stop()
                 logger.info("ESC退出")
                 return
             time.sleep(0.02)
 
-    threading.Thread(target=loop, daemon=True).start()
+    event = threading.Event()
+    esc_thread = threading.Thread(target=loop, args=(event,), daemon=True)
+    event.set()
+    esc_thread.start()
+    return esc_thread, event
 
 
 # =========================
@@ -388,7 +392,7 @@ def run(path: str, hwnd=None, points=None):
     player = MacroPlayer()
     trigger = TriggerController(hwnd, points)
 
-    start_esc(player)
+    esc_thread, event = start_esc(player)
 
     try:
         timeBeginPeriod(1)
@@ -400,6 +404,7 @@ def run(path: str, hwnd=None, points=None):
         player.play(events)
     finally:
         timeEndPeriod(1)
+        event.clear()
 
 
 if __name__ == "__main__":

@@ -614,6 +614,7 @@ def soar_to_the_beat_macro_replay_task(event, spec: TaskSpec, ipc: IPCManager, *
         time.sleep(0.2)
         logger.debug(spec.game_path)
 
+        # 用户模板
         if ctx.param_config.useUserTemplate:
             if not ctx.param_config.userTemplate:
                 logger.error("勾选使用自定义，但未选择自定义模板")
@@ -624,6 +625,7 @@ def soar_to_the_beat_macro_replay_task(event, spec: TaskSpec, ipc: IPCManager, *
                 return
             file_name = file_util.get_assets_macro_SoarToTheBeat(ctx.param_config.userTemplate)
         else:
+            # 预设模板
             if not ctx.param_config.defaultTemplate:
                 logger.error("未选择模板文件")
                 ctx.ipc.event_queue.put({

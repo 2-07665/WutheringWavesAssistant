@@ -435,7 +435,7 @@ class MainController:
         elif task_name == "AutoStoryEnjoyProcessTask":
             spec.skip_is_open = False
         # if task_name in ["AutoBossProcessTask", "AutoPickupProcessTask"]:
-        if task_name in ["AutoBossProcessTask"]:
+        if task_name in ["AutoBossProcessTask", "EchoMergeProcessTask"]:
             spec.ocr_use_gpu = True
         else:
             spec.ocr_use_gpu = False

@@ -212,6 +212,9 @@ class MacroRecorder:
     # =========================
 
     def start_hook(self):
+        if self.kb_hook:
+            return
+
         self._kb_func = HOOKPROC(self.keyboard_proc)
         self._mouse_func = HOOKPROC(self.mouse_proc)
 
@@ -226,8 +229,11 @@ class MacroRecorder:
     def stop_hook(self):
         if self.kb_hook:
             user32.UnhookWindowsHookEx(self.kb_hook)
+            self.kb_hook = None
+
         if self.mouse_hook:
             user32.UnhookWindowsHookEx(self.mouse_hook)
+            self.mouse_hook = None
 
     # =========================
     # 生命周期
@@ -311,25 +317,30 @@ def run(path: str, hwnd=None, points=None):
     from .macro_replay_util import TriggerController
     trigger = TriggerController(hwnd, points)
 
-    recorder.start_hook()
-    start_esc(recorder)
+    try:
+        recorder.start_hook()
+        start_esc(recorder)
 
-    logger.info("准备就绪，等待开始")
-    wait_result = trigger.wait_color(should_stop=lambda: not recorder.trigger_wait)
+        logger.info("准备就绪，等待开始")
+        wait_result = trigger.wait_color(should_stop=lambda: not recorder.trigger_wait)
 
-    if wait_result:
-        logger.info("开始录制（按ESC保存退出）")
-        recorder.start_record()
+        if wait_result:
+            logger.info("开始录制（按ESC保存退出）")
+            recorder.start_record()
 
-        message_loop(recorder)
+            message_loop(recorder)
 
+            recorder.stop_hook()
+            recorder.save(path)
+            return True
+        else:
+            logger.info("录制开始前退出，无文件生成")
+            recorder.stop_hook()
+            return False
+    finally:
+        recorder.recording = False
+        recorder.trigger_wait = False
         recorder.stop_hook()
-        recorder.save(path)
-        return True
-    else:
-        logger.info("录制开始前退出，无文件生成")
-        recorder.stop_hook()
-        return False
 
 
 if __name__ == "__main__":

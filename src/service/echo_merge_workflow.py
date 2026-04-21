@@ -118,7 +118,9 @@ def navigateToDataMerge(ctx: NodeContext) -> bool:
     # 点击标准融合
     bbox = match_result.get(I18nPageEchoMerge.DataMerge.StandardMerge)
     ctx.control_service.click(bbox.near)
-    time.sleep(0.4)
+    time.sleep(0.2)
+    ctx.control_service.click(bbox.center)
+    time.sleep(1.0)
     # 点击进入声骸选择页
     search_result.sort(key=lambda p: p.y2, reverse=True)
     ctx.control_service.click(search_result[0].near)
@@ -141,6 +143,7 @@ def navigateToDataMerge(ctx: NodeContext) -> bool:
             return False
 
         # 点击全选 合成
+        time.sleep(0.1)
         bbox = match_result.get(I18nPageEchoMerge.StandardMerge_SelectAll.SelectAll)
         ctx.control_service.click(bbox.center)
         time.sleep(0.2)

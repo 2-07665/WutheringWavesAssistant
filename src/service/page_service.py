@@ -152,16 +152,22 @@ class PageServiceImpl(AbstractPageService, GlobalPageService):
         return self._is_match(ocr_result, self._i18n_page_global, page_key)
 
     def global_page_action(self, ocr_result: OcrResult, **kwargs) -> bool:
-        match_result = self.match(ocr_result)
-        logger.debug(f"match_result: {match_result}")
-        if not match_result:
+        match_results = self.matches(ocr_result)
+        logger.debug(f"match_result: {match_results}")
+        if not match_results:
             return False
-        page_key, bbox_map = match_result
-        action = self._global_action.get(page_key)
-        # if action is None:
-        #     return False
-        action(bbox_map, ocr_result, **kwargs)
-        return True
+        for page_key, bbox_map in match_results.items():
+            action = self._global_action.get(page_key)
+            if action is None:
+                continue
+            logger.debug(f"page_key: {page_key}, action: {action.__name__}")
+            try:
+                action(bbox_map, ocr_result, **kwargs)
+                return True
+            except Exception as e:
+                logger.error(f"page_key: {page_key}, action: {action.__name__}")
+                raise e
+        return False
 
     # ------------- Global action --------------
 
@@ -259,6 +265,7 @@ class PageServiceImpl(AbstractPageService, GlobalPageService):
         for _ in range(4):
             self._control_service.left()
             self._control_service.right()
+            time.sleep(0.05)
         return True
 
     def _build_UI_ESC_LeaveInstance(self, bbox_map: dict[str, TextBox], ocr_result: OcrResult, **kwargs):
@@ -272,7 +279,7 @@ class PageServiceImpl(AbstractPageService, GlobalPageService):
         return True
 
     def _build_Notice_LoseConsciousness(self, bbox_map: dict[str, TextBox], ocr_result: OcrResult, **kwargs):
-        textbox = bbox_map.get(I18nPage.Notice_LoseConsciousness.LoseConsciousness)
+        textbox = bbox_map.get(I18nPage.Notice_LoseConsciousness.Revive)
         self._control_service.click(textbox.center)
         return True
 
