@@ -1,7 +1,7 @@
 import logging
 import random
 from dataclasses import dataclass
-from enum import IntFlag
+from enum import IntFlag, Enum
 from typing import Sequence, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -328,6 +328,30 @@ class RapidocrTextBox(TextBox):
         return textboxes
 
 
+class AspectType(Enum):
+    """
+    屏幕比例类型
+    """
+    STANDARD = 0  # 16:9
+    TALL = 1      # 16:10（更高）
+    WIDE = 2      # 21:9（更宽）
+
+    @staticmethod
+    def from_size(w: int, h: int, base_w: int, base_h: int) -> "AspectType":
+        """
+        根据当前尺寸与基准尺寸计算分辨率类型
+        """
+        ratio = w / h
+        base_ratio = base_w / base_h
+
+        if abs(ratio - base_ratio) <= 0.01:
+            return AspectType.STANDARD
+        elif ratio < base_ratio:
+            return AspectType.TALL
+        else:
+            return AspectType.WIDE
+
+
 # ================= 缩放器 =================
 
 class Scaler:
@@ -336,23 +360,50 @@ class Scaler:
         self.base_w, self.base_h = base_wh
         self.cur_w, self.cur_h = cur_wh
 
-        self.scale_x = self.cur_w / self.base_w
-        self.scale_y = self.cur_h / self.base_h
+        if self.base_w == 0 or self.base_h == 0:
+            raise ValueError("base size invalid")
+        if self.cur_w == 0 or self.cur_h == 0:
+            raise ValueError("current size invalid")
 
-    # ---------- align → 比例 ----------
-    def _rx(self, align: Align) -> float:
-        if align & Align.Left: return 0.0
-        if align & Align.Center: return 0.5
-        if align & Align.Right: return 1.0
-        raise ValueError(f"Invalid horizontal align: {align}")
+        # 基础比例
+        self._ratio_w = self.cur_w / self.base_w
+        self._ratio_h = self.cur_h / self.base_h
 
-    def _ry(self, align: Align) -> float:
-        if align & Align.Top: return 0.0
-        if align & Align.Middle: return 0.5
-        if align & Align.Bottom: return 1.0
-        raise ValueError(f"Invalid vertical align: {align}")
+        # 分辨率分类
+        self._aspect = AspectType.from_size(self.cur_w, self.cur_h, self.base_w, self.base_h)
 
+        # 黑边补偿
+        self._w_diff, self._h_diff = self._compute_letterbox_offset()
+
+    # ---------- 分辨率类型 ----------
+    def _detect_aspect_type(self) -> AspectType:
+        """
+        根据当前分辨率与基准分辨率的比值来判断当前的分辨率类型。
+        """
+        cur_ratio = self.cur_w / self.cur_h
+        base_ratio = self.base_w / self.base_h
+
+        if abs(cur_ratio - base_ratio) <= 0.01:
+            return AspectType.STANDARD
+        elif cur_ratio < base_ratio:
+            return AspectType.TALL
+        else:
+            return AspectType.WIDE
+
+    # ---------- 黑边 ----------
+    def _compute_letterbox_offset(self) -> Tuple[float, float]:
+        """
+        返回 (左右黑边总宽, 上下黑边总高)
+        """
+        w_diff = self.cur_w - self.base_w * self.cur_h / self.base_h
+        h_diff = self.cur_h - self.base_h * self.cur_w / self.base_w
+        return w_diff, h_diff
+
+    # ---------- 对齐校验 ----------
     def _validate_align(self, align: Align):
+        """
+        校验对齐方式是否合法
+        """
         hx = align & (Align.Left | Align.Center | Align.Right)
         hy = align & (Align.Top | Align.Middle | Align.Bottom)
 
@@ -362,26 +413,59 @@ class Scaler:
         if hy not in (Align.Top, Align.Middle, Align.Bottom):
             raise ValueError(f"Invalid vertical align: {align}")
 
+    # ---------- X 轴映射 ----------
+    def _map_x(self, x: float, align: Align) -> float:
+        if self._aspect == AspectType.STANDARD:
+            return x * self._ratio_w
+
+        if self._aspect == AspectType.TALL:
+            return x * self._ratio_w
+
+        # WIDE（21:9 等）
+        if align & Align.Right:
+            return self._w_diff + x * self._ratio_h
+        elif align & Align.Center:
+            return self._w_diff / 2 + x * self._ratio_h
+        else:  # Left
+            return x * self._ratio_h
+
+    # ---------- Y 轴映射 ----------
+    def _map_y(self, y: float, align: Align) -> float:
+        if self._aspect == AspectType.STANDARD:
+            return y * self._ratio_w
+
+        if self._aspect == AspectType.WIDE:
+            return y * self._ratio_h
+
+        # TALL（16:10 等）
+        if align & Align.Bottom:
+            return self._h_diff + y * self._ratio_w
+        elif align & Align.Middle:
+            return self._h_diff / 2 + y * self._ratio_w
+        else:  # Top
+            return y * self._ratio_w
+
+    # ---------- 普通点（无对齐） ----------
+    def scale_point(self, p: Point) -> Point:
+        """
+        纯缩放（无锚点语义）——用于算法坐标
+        """
+        return Point(
+            int(p.x * self._ratio_w),
+            int(p.y * self._ratio_h)
+        )
+
     # ---------- AnchorPoint → Point ----------
     def as_point(self, p: AnchorPoint) -> Point:
+        """
+        将逻辑坐标（基于 base 分辨率）映射到当前屏幕坐标
+        """
         self._validate_align(p.align)
 
-        rx = self._rx(p.align)
-        ry = self._ry(p.align)
+        new_x = self._map_x(p.x, p.align)
+        new_y = self._map_y(p.y, p.align)
 
-        base_ref_x = self.base_w * rx
-        base_ref_y = self.base_h * ry
-
-        cur_ref_x = self.cur_w * rx
-        cur_ref_y = self.cur_h * ry
-
-        dx = p.x - base_ref_x
-        dy = p.y - base_ref_y
-
-        return Point(
-            int(cur_ref_x + dx * self.scale_x),
-            int(cur_ref_y + dy * self.scale_y),
-        )
+        return Point(int(new_x), int(new_y))
 
     # ---------- AnchorBBox → BBox ----------
     def as_bbox(self, box: AnchorBBox) -> BBox:
