@@ -83,7 +83,7 @@ paddleocr = [
 dev = [
     "pytest (>=9.0.3)",
     "matplotlib",
-    "python-dotenv",
+    "python-dotenv (>=1.2.2)",
 ]
 
 
