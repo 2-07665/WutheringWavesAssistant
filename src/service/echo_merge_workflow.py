@@ -97,13 +97,13 @@ def navigateToDataMerge(ctx: NodeContext) -> bool:
     # 点击数据合成侧边栏坐标
     data_merge_point = ctx.scaler.as_point(AnchorPoint(50, 400, Align.Top | Align.Left)).as_tuple()
     ctx.control_service.click(data_merge_point)
-    time.sleep(0.5)
+    time.sleep(1)
 
     # 等待数据合成页面出现
     oq = OcrQuery(ctx)
     match_result = oq.poll(
         lambda: ctx.echo_merge_service.is_match(oq.grab().query().results, I18nPageEchoMerge.DataMerge.PAGE),
-        timeout=3.0, interval=0.3
+        timeout=5.0, interval=0.3
     )
     if not match_result:
         logger.warning(f"Page not found: {I18nPageEchoMerge.DataMerge.PAGE}")
@@ -111,16 +111,18 @@ def navigateToDataMerge(ctx: NodeContext) -> bool:
     # 查找定向融合 TODO 进入定向融合
     targeted_merge = ctx.tr(I18nText.TargetedMerge)
     search_result = oq.search(targeted_merge)
-    if not search_result or len(search_result) != 2:
-        logger.warning(f"Not enough text found: {targeted_merge}, expected count: 2")
+    if not search_result or len(search_result) > 2:
+        logger.warning(f"Insufficient text count: {targeted_merge}, expected: 1 or 2")
         return False
-
-    # 点击标准融合
-    bbox = match_result.get(I18nPageEchoMerge.DataMerge.StandardMerge)
-    ctx.control_service.click(bbox.near)
-    time.sleep(0.2)
-    ctx.control_service.click(bbox.center)
-    time.sleep(1.0)
+    if len(search_result) == 2:
+        # 点击标准融合
+        bbox = match_result.get(I18nPageEchoMerge.DataMerge.StandardMerge)
+        ctx.control_service.click(bbox.near)
+        time.sleep(0.2)
+        ctx.control_service.click(bbox.center)
+        time.sleep(1.0)
+    if len(search_result) == 1:
+        search_result = oq.search(ctx.tr(I18nText.StandardMerge))
     # 点击进入声骸选择页
     search_result.sort(key=lambda p: p.y2, reverse=True)
     ctx.control_service.click(search_result[0].near)
