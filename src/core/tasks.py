@@ -13,11 +13,12 @@ import psutil
 import win32gui
 
 from src.config import logging_config
-from src.config.gui_config import ParamConfig
+from src.core import message
 from src.core.contexts import Context
 from src.core.exceptions import ScreenshotError
 from src.core.geometry import AnchorPoint, Align
 from src.core.interface import ImgService, OCRService, ControlService, PageEventService, WindowService
+from src.core.message import MsgSource, MsgTaskStatus, MsgType
 from src.core.workflow import TaskSpec, IPCManager, NodeContext
 from src.util import hwnd_util, keymouse_util, file_util
 
@@ -178,6 +179,12 @@ class SoarToTheBeatMacroRecordTask(ThreadTask):
     def get_task(self, *args) -> Callable[..., None] | None:
         return soar_to_the_beat_macro_record_task
 
+
+class DailyTask(ProcessTask):
+    def get_task(self, *args) -> Callable[..., None]:
+        return daily_task
+
+
 @dataclass
 class TaskMsg:
     task_name: Optional[str] = None
@@ -295,10 +302,7 @@ def auto_boss_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
         context = Context()
         context.spec = spec
         # 从快照还原配置
-        if spec.param_config:
-            context.param_config = ParamConfig.build(content=spec.param_config)
-        if spec.game_path:
-            context.param_config.gamePath = spec.game_path
+        context.param_config = spec.param_config
         # 新旧配置兼容
         context.app_config.TargetBoss = context.param_config.get_boss_name_list()
         logger.info("Boss Rush: %s", context.app_config.TargetBoss)
@@ -381,10 +385,7 @@ def auto_pickup_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
     context = Context()
     context.spec = spec
     # 从快照还原配置
-    if spec.param_config:
-        context.param_config = ParamConfig.build(content=spec.param_config)
-    if spec.game_path:
-        context.param_config.gamePath = spec.game_path
+    context.param_config = spec.param_config
     # 新旧配置兼容
     context.app_config.TargetBoss = context.param_config.get_boss_name_list()
     logger.debug("TargetBoss: %s", context.app_config.TargetBoss)
@@ -437,10 +438,7 @@ def auto_story_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
     context = Context()
     context.spec = spec
     # 从快照还原配置
-    if spec.param_config:
-        context.param_config = ParamConfig.build(content=spec.param_config)
-    if spec.game_path:
-        context.param_config.gamePath = spec.game_path
+    context.param_config = spec.param_config
     # 新旧配置兼容
     context.app_config.TargetBoss = context.param_config.get_boss_name_list()
     logger.debug("TargetBoss: %s", context.app_config.TargetBoss)
@@ -496,10 +494,7 @@ def daily_activity_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
     context = Context()
     context.spec = spec
     # 从快照还原配置
-    if spec.param_config:
-        context.param_config = ParamConfig.build(content=spec.param_config)
-    if spec.game_path:
-        context.param_config.gamePath = spec.game_path
+    context.param_config = spec.param_config
     # 新旧配置兼容
     context.app_config.TargetBoss = context.param_config.get_boss_name_list()
     logger.debug("TargetBoss: %s", context.app_config.TargetBoss)
@@ -538,22 +533,35 @@ def daily_activity_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
             pass
 
 
-def task_init(event, spec: TaskSpec, ipc: IPCManager, is_thread=False, **kwargs):
+def task_init(event, spec: TaskSpec, ipc: IPCManager, is_thread=False, source=None, **kwargs):
+    """ 初始化任务运行环境，加载日志、上下文 """
+
     from src.core.injector import Container
 
     if not is_thread:
         logging_config.setup_logging(ipc.log_queue)
-    logger.debug(f"spec: {json.dumps(spec.__dict__)}")
+    # logger.debug(f"spec: {json.dumps(spec.__dict__)}")
 
     ctx = NodeContext()
     ctx.spec = spec
     ctx.ipc = ipc
     ctx.runtime.stop_event = event
+    ctx.runtime.send = message.make_sender(ipc.proc_queue, source, spec.task_id)
 
     container = Container.build(ctx)
     logger.debug("Create application context")
+    logger.debug(spec.game_path)
 
     return ctx, container
+
+
+def release_press_key(ctx):
+    try:
+        keymouse_util.mouse_left_up(ctx.window_service.window, 0, 0)
+        keymouse_util.mouse_right_up(ctx.window_service.window, 0, 0)
+        keymouse_util.key_up(ctx.window_service.window, "W")
+    except Exception:
+        pass
 
 
 def echo_merge_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
@@ -595,12 +603,7 @@ def echo_merge_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
                 "task": {"SoarToTheBeatMacroReplayTask": ["failed"]}
             }, block=True)
         finally:
-            try:
-                keymouse_util.mouse_left_up(ctx.window_service.window, 0, 0)
-                keymouse_util.mouse_right_up(ctx.window_service.window, 0, 0)
-                keymouse_util.key_up(ctx.window_service.window, "W")
-            except Exception:
-                pass
+            release_press_key(ctx)
             logger.info("声骸融合任务进程结束")
     except Exception as e:
         logger.exception(e)
@@ -610,30 +613,31 @@ def soar_to_the_beat_macro_replay_task(event, spec: TaskSpec, ipc: IPCManager, *
     try:
         ctx, container = task_init(event, spec, ipc, is_thread=True, **kwargs)
         logger.info("自动音游任务线程开始运行")
-
-        time.sleep(0.2)
         logger.debug(spec.game_path)
+        time.sleep(0.1)
+
+        config = ctx.spec.param_config
 
         # 用户模板
-        if ctx.param_config.useUserTemplate:
-            if not ctx.param_config.userTemplate:
+        if config.useUserTemplate:
+            if not config.userTemplate:
                 logger.error("勾选使用自定义，但未选择自定义模板")
                 ctx.ipc.event_queue.put({
                     "task": {"SoarToTheBeatMacroReplayTask": ["failed", "勾选使用自定义，但未选择自定义模板"]}
                 }, block=True)
-                time.sleep(0.2)
+                time.sleep(0.1)
                 return
-            file_name = file_util.get_assets_macro_SoarToTheBeat(ctx.param_config.userTemplate)
+            file_name = file_util.get_assets_macro_SoarToTheBeat(config.userTemplate)
         else:
             # 预设模板
-            if not ctx.param_config.defaultTemplate:
+            if not config.defaultTemplate:
                 logger.error("未选择模板文件")
                 ctx.ipc.event_queue.put({
                     "task": {"SoarToTheBeatMacroReplayTask": ["failed", "未选择模板文件"]}
                 }, block=True)
-                time.sleep(0.2)
+                time.sleep(0.1)
                 return
-            file_name = file_util.get_assets_macro_SoarToTheBeat_template(ctx.param_config.defaultTemplate)
+            file_name = file_util.get_assets_macro_SoarToTheBeat_template(config.defaultTemplate)
         logger.debug(f"load: {file_name}")
 
         try:
@@ -643,7 +647,7 @@ def soar_to_the_beat_macro_replay_task(event, spec: TaskSpec, ipc: IPCManager, *
             ctx.ipc.event_queue.put({
                 "task": {"SoarToTheBeatMacroReplayTask": ["finished"]}
             }, block=True)
-            time.sleep(0.2)
+            time.sleep(0.1)
         except KeyboardInterrupt:
             logger.warning("KeyboardInterrupt")
         except Exception as e:
@@ -652,14 +656,9 @@ def soar_to_the_beat_macro_replay_task(event, spec: TaskSpec, ipc: IPCManager, *
             ctx.ipc.event_queue.put({
                 "task": {"SoarToTheBeatMacroReplayTask": ["failed"]}
             }, block=True)
-            time.sleep(0.2)
+            time.sleep(0.1)
         finally:
-            try:
-                keymouse_util.mouse_left_up(ctx.window_service.window, 0, 0)
-                keymouse_util.mouse_right_up(ctx.window_service.window, 0, 0)
-                keymouse_util.key_up(ctx.window_service.window, "W")
-            except Exception:
-                pass
+            release_press_key(ctx)
             logger.info("自动音游任务线程结束")
     except Exception as e:
         logger.exception(e)
@@ -695,12 +694,7 @@ def soar_to_the_beat_macro_record_task(event, spec: TaskSpec, ipc: IPCManager, *
             }, block=True)
             time.sleep(0.2)
         finally:
-            try:
-                keymouse_util.mouse_left_up(ctx.window_service.window, 0, 0)
-                keymouse_util.mouse_right_up(ctx.window_service.window, 0, 0)
-                keymouse_util.key_up(ctx.window_service.window, "W")
-            except Exception:
-                pass
+            release_press_key(ctx)
             logger.info("按键宏录制任务线程结束")
     except Exception as e:
         logger.exception(e)
@@ -712,6 +706,31 @@ def macro_point_scaler(ctx):
     points = [ctx.scaler.as_point(AnchorPoint(p[0], p[1], Align.Top | Align.Right)).as_tuple() for p in points_1280_720]
     return points
 
+
+def daily_task(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
+    try:
+
+        ctx, container = task_init(event, spec, ipc, source=MsgSource.DAILY_TASK, **kwargs)
+        logger.info(f"每日任务开始运行, task_id: {spec.task_id}")
+        ctx.runtime.send(MsgType.TASK_STATUS, status=MsgTaskStatus.RUNNING)
+
+        try:
+
+            from src.service.daily_workflow import DailyWorkflow
+            wf = DailyWorkflow(ctx)
+            wf.execute()
+
+        except KeyboardInterrupt as e:
+            logger.warning(f"KeyboardInterrupt: {e}")
+        except Exception as e:
+            logger.exception(e)
+            ctx.runtime.send(MsgType.TASK_STATUS, status=MsgTaskStatus.FAILED)
+        finally:
+            logger.info(f"每日任务结束, task_id: {spec.task_id}")
+            release_press_key(ctx)
+
+    except Exception as e:
+        logger.exception(e)
 
 # if __name__ == '__main__':
 #     _stop_event = Event()

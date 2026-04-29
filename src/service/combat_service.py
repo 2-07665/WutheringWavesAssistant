@@ -17,6 +17,8 @@ class CombatServiceImpl(CombatService):
         self._boss_info_service: BossInfoService = boss_info_service
 
         self._combat_system: CombatSystem = CombatSystem(self._control_service, self._img_service)
+        self._combat_system.is_async = True
+        # self._combat_system.start()
 
     def combat_system(self):
         return self._combat_system

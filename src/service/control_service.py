@@ -21,7 +21,7 @@ class BaseControlService:
         self._window_service: WindowService = window_service
 
     def _get_mapping_key(self, reset_key: str, src_key: str | int):
-        if self._context is None:
+        if self._context is None or not isinstance(self._context, Context):
             return src_key
         return self._context.config.keyboard_mapping.get_mapping_key(reset_key, src_key)
 

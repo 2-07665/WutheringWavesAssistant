@@ -21,6 +21,11 @@ class WindowService(ABC):
 
     @property
     @abstractmethod
+    def handle(self):
+        pass
+
+    @property
+    @abstractmethod
     def scaler(self) -> Scaler:
         pass
 
@@ -213,6 +218,11 @@ class GlobalPageService(PageService):
 
 
 class EchoMergeService(PageService, ABC):
+
+    pass
+
+
+class GuidebookService(PageService, ABC):
 
     pass
 

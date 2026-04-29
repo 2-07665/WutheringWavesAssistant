@@ -27,6 +27,19 @@ class Point:
     def as_tuple(self) -> Tuple[int, int]:
         return self.x, self.y
 
+    def __iter__(self):
+        """支持元组解包"""
+        yield self.x
+        yield self.y
+
+    def __getitem__(self, key):
+        """支持索引访问"""
+        if key == 0:
+            return self.x
+        elif key == 1:
+            return self.y
+        raise IndexError("Index out of range")
+
     def __str__(self):
         return f"Point({self.x},{self.y})"
 
@@ -472,3 +485,13 @@ class Scaler:
         p1 = self.as_point(box.p1)
         p2 = self.as_point(box.p2)
         return BBox(p1.x, p1.y, p2.x, p2.y).normalize()
+
+
+class PointKind(str, Enum):
+    """
+    BBox 内取点的策略
+    """
+
+    CENTER = "center"   # 中心点
+    NEAR = "near"       # 中心点区域附近
+    RANDOM = "random"   # 随机点

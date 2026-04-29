@@ -113,7 +113,7 @@ class CombatSystem:
             elif CharClassEnum.Healer in char_class:
                 healer.append((resonator, index))
             else:
-                raise ValueError("未知的枚举值")
+                raise ValueError("Unknown enum value")
         # 辅助先于输出
         sorted_resonators: list[tuple[BaseResonator, int]] = support + dps + healer + none
         logger.debug(f"sorted_resonators: {sorted_resonators}")
@@ -230,11 +230,11 @@ class CombatSystem:
             self.event.set()
             self.run(self.event)
 
-    # def stop(self):
-    #     with self._lock:
-    #         self.event.clear()
-    #         if self.is_async:
-    #             self._thread = None
+    def stop(self):
+        with self._lock:
+            self.event.clear()
+            if self.is_async:
+                self._thread = None
 
     def pause(self):
         with self._lock:

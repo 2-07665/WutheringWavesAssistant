@@ -6,22 +6,7 @@ from dependency_injector import containers, providers
 logger = logging.getLogger(__name__)
 
 
-class Container(containers.DeclarativeContainer):
-    from src.service.auto_boss_service import AutoBossServiceImpl
-    from src.service.auto_pickup_service import AutoPickupServiceImpl
-    from src.service.auto_story_service import AutoStoryServiceImpl
-    from src.service.boss_info_service import BossInfoServiceImpl
-    from src.service.combat_service import CombatServiceImpl
-    from src.service.control_service import Win32ControlServiceImpl
-    from src.service.daily_activity_service import DailyActivityServiceImpl
-    from src.service.img_service import ImgServiceImpl
-    # from src.service.ocr_service import PaddleOcrServiceImpl
-    # from src.service.ocr_service import RapidOcrServiceImpl
-    from src.service.page_service import PageServiceImpl
-    from src.service.page_service import EchoMergeServiceImpl
-    from src.service.od_service import YoloServiceImpl
-    from src.service.window_service import HwndServiceImpl
-
+def select_ocr_engine_impl():
     ocr_engine_impl = None
     try:
         # 若安装paddleocr则是用paddleocr作为ocr引擎
@@ -37,10 +22,39 @@ class Container(containers.DeclarativeContainer):
         from src.service.ocr_service import RapidOcrServiceImpl
         ocr_engine_impl = RapidOcrServiceImpl
         logger.debug("rapidocr detected")
+    return ocr_engine_impl
+
+
+class Container(containers.DeclarativeContainer):
+    from src.core.message import MessageBus, ProcessBridge
+    from src.service.auto_boss_service import AutoBossServiceImpl
+    from src.service.auto_pickup_service import AutoPickupServiceImpl
+    from src.service.auto_story_service import AutoStoryServiceImpl
+    from src.service.boss_info_service import BossInfoServiceImpl
+    from src.service.combat_service import CombatServiceImpl
+    from src.service.control_service import Win32ControlServiceImpl
+    from src.service.daily_activity_service import DailyActivityServiceImpl
+    from src.service.img_service import ImgServiceImpl
+    # from src.service.ocr_service import PaddleOcrServiceImpl
+    # from src.service.ocr_service import RapidOcrServiceImpl
+    from src.service.page_service import PageServiceImpl
+    from src.service.page_service import EchoMergeServiceImpl
+    from src.service.page_service import GuidebookServiceImpl
+    from src.service.od_service import YoloServiceImpl
+    from src.service.window_service import HwndServiceImpl
 
     context = providers.Dependency()  # 占位，后续覆盖成真实ctx
+    ocr_engine_impl = select_ocr_engine_impl()
     keyboard_mapping = providers.Object({})
-    window_service = providers.Singleton(HwndServiceImpl, context=context)
+    msg_bus = providers.Singleton(MessageBus)
+    proc_bridge = providers.Singleton(
+        ProcessBridge,
+        bus=msg_bus
+    )
+    window_service = providers.Singleton(
+        HwndServiceImpl,
+        context=context
+    )
     img_service = providers.Singleton(
         ImgServiceImpl,
         context=context,
@@ -86,7 +100,17 @@ class Container(containers.DeclarativeContainer):
         od_service=od_service,
         boss_info_service=boss_info_service,
     )
-    combat_system = providers.Singleton(
+    guidebook_service = providers.Singleton(
+        GuidebookServiceImpl,
+        context=context,
+        window_service=window_service,
+        img_service=img_service,
+        ocr_service=ocr_service,
+        control_service=control_service,
+        od_service=od_service,
+        boss_info_service=boss_info_service,
+    )
+    combat_service = providers.Singleton(
         CombatServiceImpl,
         context=context,
         window_service=window_service,

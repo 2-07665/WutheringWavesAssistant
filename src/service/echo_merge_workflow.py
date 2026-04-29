@@ -4,15 +4,14 @@ import time
 from typing import Optional
 
 from src.core.geometry import AnchorBBox, Align, AnchorPoint
-from src.core.pages import I18nPage, I18nPageEchoMerge, I18nText
+from src.core.pages import I18nPage, I18nPageEchoMerge, I18nText, OcrQuery
 from src.core.workflow import node, WorkflowEngine, NodeContext, IWorkflow
-from src.service.page_service import OcrQuery
 
 logger = logging.getLogger(__name__)
 
 
 @node()
-def end_node(ctx: NodeContext) -> bool:
+def end_node(ctx: NodeContext, **kwargs) -> bool:
     logger.debug(inspect.currentframe().f_code.co_name)
     ctx.ipc.event_queue.put({
         "task": {"EchoMergeProcessTask": "finished"}
@@ -22,7 +21,7 @@ def end_node(ctx: NodeContext) -> bool:
 
 
 @node()
-def navigateToValidPage(ctx: NodeContext) -> Optional[str]:
+def navigateToValidPage(ctx: NodeContext, **kwargs) -> Optional[str]:
     logger.debug(inspect.currentframe().f_code.co_name)
     time.sleep(1)
 
@@ -54,7 +53,7 @@ def navigateToValidPage(ctx: NodeContext) -> Optional[str]:
 
 
 @node()
-def navigateToDataMerge(ctx: NodeContext) -> bool:
+def navigateToDataMerge(ctx: NodeContext, **kwargs) -> bool:
     logger.debug(inspect.currentframe().f_code.co_name)
 
     ctx.control_service.activate()
@@ -82,13 +81,13 @@ def navigateToDataMerge(ctx: NodeContext) -> bool:
         return False
     bbox = search_result[0]
     ctx.control_service.click(bbox.near)
-    time.sleep(0.5)
+    time.sleep(1)
 
     # 等待葫芦等级页面出现
     oq = OcrQuery(ctx)
     match_result = oq.poll(
         lambda: ctx.echo_merge_service.is_match(oq.grab().query().results, I18nPageEchoMerge.DataBank.PAGE),
-        timeout=3.0, interval=0.3
+        timeout=5.0, interval=0.3
     )
     if not match_result:
         logger.warning(f"Page not found: {I18nPageEchoMerge.DataBank.PAGE}")
@@ -218,26 +217,19 @@ class EchoMergeWorkflow(IWorkflow):
 
     def __init__(self, ctx: NodeContext):
         self.ctx: NodeContext = ctx
+        self.engine = WorkflowEngine()
+        self.__init_workflow()
 
-        self._workflow: WorkflowEngine = None
-        self._start_node = None
-        self._create_workflow()
-
-    def _create_workflow(self):
-        wf = WorkflowEngine()
-
+    def __init_workflow(self):
         (
-            wf.source("navigateToValidPage")
+            self.engine.source("navigateToValidPage", is_start=True)
             .when(lambda ctx: ctx.shared.last_result == I18nPage.UI_ESC_Terminal.PAGE).to("navigateToDataMerge")
             .always().to("navigateToValidPage")
         )
 
-        wf.source("navigateToDataMerge").always().to("end_node")
-
-        self._workflow = wf
-        self._start_node = "navigateToValidPage"
+        self.engine.source("navigateToDataMerge").always().to("end_node")
 
     def execute(self, **kwargs):
         self.ctx.control_service.activate()
-        time.sleep(0.2)
-        self._workflow.run(self.ctx, self._start_node)
+        time.sleep(0.1)
+        self.engine.run(self.ctx, **kwargs)

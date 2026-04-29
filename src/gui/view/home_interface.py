@@ -205,7 +205,7 @@ class HomeInterface(ScrollArea):
                 ""),
             routeKey="basicInputInterface",
             index=16,
-            task_name="",
+            task_name="DailyTask",
         )
         basicInputView.addSampleCard(
             icon=":/gallery/images/controls/Checkbox.png",

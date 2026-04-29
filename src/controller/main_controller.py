@@ -13,6 +13,7 @@ from src.config.gui_config import ParamConfig
 from src.core import environs
 from src.core.contexts import Context
 from src.core.exceptions import StopError
+from src.core.message import ProcessBridge, MessageBus
 from src.core.tasks import ProcessTask, EchoMergeProcessTask
 from src.core.workflow import TaskSpec, IPCManager
 from src.util import hwnd_util
@@ -74,6 +75,9 @@ class TaskMonitor:
             return
         elif "SoarToTheBeatMacroRecordTask" in self.running_tasks:
             self._run_SoarToTheBeatTask("SoarToTheBeatMacroRecordTask")
+            return
+        elif "DailyTask" in self.running_tasks:
+            # self._run_SoarToTheBeatTask("SoarToTheBeatMacroRecordTask")
             return
         self._run_restart()
 
@@ -351,7 +355,7 @@ class MainController:
 
         from src.core.tasks import MouseResetProcessTask, AutoBossProcessTask, AutoPickupProcessTask, \
             AutoStoryProcessTask, DailyActivityProcessTask, ProcessTask, SoarToTheBeatMacroReplayTask, \
-            SoarToTheBeatMacroRecordTask
+            SoarToTheBeatMacroRecordTask, DailyTask
 
 
         self.tasks = {
@@ -364,6 +368,7 @@ class MainController:
             "EchoMergeProcessTask": EchoMergeProcessTask,
             "SoarToTheBeatMacroReplayTask": SoarToTheBeatMacroReplayTask,
             "SoarToTheBeatMacroRecordTask": SoarToTheBeatMacroRecordTask,
+            "DailyTask": DailyTask,
         }
         self.running_tasks: Dict[str, Sequence] = {}
         self._lock = threading.Lock()
@@ -372,6 +377,11 @@ class MainController:
 
         self.param_config_path = None
         self.gui_win_id = None
+
+        self.msg_bus = MessageBus()
+        # 跨进程桥
+        self.proc_bridge = ProcessBridge(self.msg_bus)
+        self.proc_bridge.start()
 
     def execute(self, task_name: str, task_ops: str):
         logger.debug("task_name: %s, task_ops: %s", task_name, task_ops)
@@ -415,6 +425,7 @@ class MainController:
 
             event = multiprocessing.Event()
         event.set()
+        ipc.proc_queue = self.proc_bridge.queue
 
         task_builder = self.tasks.get(task_name)
         kwargs = {}
@@ -422,14 +433,16 @@ class MainController:
         self.running_tasks[task_name] = (task, event, spec, ipc)
         self.task_monitor = TaskMonitor(self, self.running_tasks.copy(), self.param_config_path, self.gui_win_id)
 
-        # logger.info(f"run_id: {spec.run_id}")
+        # logger.info(f"task_id: {spec.task_id}")
         spec.task_name = task_name
         spec.leader_pid = os.getpid()
         spec.gui_win_id = self.gui_win_id
         spec.cli_args = sys.argv
         spec.game_path = self.task_monitor.game_path
         spec.param_config_path = self.param_config_path
-        spec.param_config = ParamConfig.snapshot(self.param_config_path)
+        spec.param_config_snapshot = ParamConfig.snapshot(self.param_config_path)
+        spec.param_config = ParamConfig.build(content=spec.param_config_snapshot)
+        spec.param_config.gamePath = spec.game_path  # 旧版
         if task_name == "AutoStorySkipProcessTask":
             spec.skip_is_open = True
         elif task_name == "AutoStoryEnjoyProcessTask":

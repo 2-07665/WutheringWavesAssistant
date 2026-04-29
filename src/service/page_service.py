@@ -3,56 +3,14 @@ import time
 from abc import ABC
 from typing import Optional
 
-import numpy as np
-
-from src.core.geometry import BBox, TextBox
+from src.core.geometry import TextBox
 from src.core.interface import WindowService, PageService, OCRService, ControlService, ImgService, ODService, \
-    BossInfoService, EchoMergeService, GlobalPageService
-from src.core.pages import I18nPage, OcrResult, I18N_PAGES, I18N_PAGES_ECHO_MERGE, I18N_TEXT, I18nPageX, I18nText
+    BossInfoService, EchoMergeService, GlobalPageService, GuidebookService
+from src.core.pages import I18nPage, OcrResult, I18N_PAGES, I18N_PAGES_ECHO_MERGE, I18N_TEXT, I18nPageX, I18nText, \
+    I18N_PAGES_GUIDEBOOK, OcrQuery
 from src.core.workflow import NodeContext
 
 logger = logging.getLogger(__name__)
-
-
-class OcrQuery:
-
-    def __init__(self, ctx: NodeContext):
-        self._ctx: NodeContext = ctx
-
-        self.img: np.ndarray = None
-        self.results: OcrResult = None
-
-    def grab(self, img: Optional[np.ndarray] = None) -> "OcrQuery":
-        if img is None:
-            self.img = self._ctx.img_service.screenshot()
-        else:
-            self.img = img
-        return self
-
-    def query(self) -> "OcrQuery":
-        self.results = self._ctx.ocr_service.query(self.img)
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f"ocr result: {self.results.results}")
-        return self
-
-    def has_results(self) -> bool:
-        return self.results.has_results()
-
-    def search(self, regex_str: str | list[str], bbox: Optional[BBox] = None) -> Optional[list[TextBox]]:
-        if not self.results.has_results():
-            return None
-        return self.results.search(regex_str, bbox)
-
-    def poll(self, func, timeout: float = 3.0, interval: float = 0.1):
-        start = time.monotonic()
-        end = start + timeout
-        while True:
-            result = func()
-            if result:
-                return result
-            if time.monotonic() >= end:
-                return None
-            time.sleep(interval)
 
 
 class AbstractPageService(PageService, ABC):
@@ -436,3 +394,32 @@ class EchoMergeServiceImpl(AbstractPageService, EchoMergeService):
 
     def is_match(self, ocr_result: OcrResult, page_key: str) -> Optional[dict[str, TextBox]]:
         return self._is_match(ocr_result, self._i18n_page_echo_merge, page_key)
+
+
+class GuidebookServiceImpl(AbstractPageService, GuidebookService):
+
+    def __init__(self, context: NodeContext, window_service: WindowService, img_service: ImgService,
+                 ocr_service: OCRService, control_service: ControlService, od_service: ODService,
+                 boss_info_service: BossInfoService):
+        super().__init__(context, window_service, img_service, ocr_service, control_service, od_service,
+                         boss_info_service)
+        logger.debug("Initializing %s", self.__class__.__name__)
+
+        self._ctx: NodeContext = context
+        self._window_service: WindowService = window_service
+        self._img_service: ImgService = img_service
+        self._ocr_service: OCRService = ocr_service
+        self._control_service: ControlService = control_service
+        self._od_service: ODService = od_service
+        self._boss_info_service: BossInfoService = boss_info_service
+
+        self._i18n_page_guidebook = I18nPageX(I18N_PAGES_GUIDEBOOK)
+
+    def matches(self, ocr_result: OcrResult) -> dict[str, dict[str, TextBox]]:
+        return self._matches(ocr_result, self._i18n_page_guidebook)
+
+    def match(self, ocr_result: OcrResult) -> Optional[tuple[str, dict[str, TextBox]]]:
+        return self._match(ocr_result, self._i18n_page_guidebook)
+
+    def is_match(self, ocr_result: OcrResult, page_key: str) -> Optional[dict[str, TextBox]]:
+        return self._is_match(ocr_result, self._i18n_page_guidebook, page_key)

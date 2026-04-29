@@ -2,11 +2,9 @@ import locale
 import logging
 from enum import Enum
 
-from pydantic import BaseModel, Field
-
 logger = logging.getLogger(__name__)
 
-class Languages(Enum):
+class Languages(str, Enum):
     """
     BCP 47 / ISO
     """

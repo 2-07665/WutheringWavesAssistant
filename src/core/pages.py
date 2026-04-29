@@ -3,13 +3,17 @@ import logging
 import re
 import time
 from abc import abstractmethod, ABC
+from functools import lru_cache
 from re import Pattern
-from typing import Callable, Dict, List, Tuple, Optional, Any
+from typing import Callable, Dict, List, Optional, Any
 
 import numpy as np
 from pydantic import BaseModel, Field, PrivateAttr
 
-from src.core.geometry import TextBox, BBox, Scaler, AnchorBBox, AnchorPoint, Align
+from src.core.boss import MoveMode, Direction
+from src.core.color import ColorRule, ColorMatch, Color, RuleMode
+from src.core.exceptions import StopError
+from src.core.geometry import TextBox, BBox, Scaler, AnchorBBox, AnchorPoint, Align, PointKind, Point
 from src.core.languages import Languages
 from src.core.regions import Position, DynamicPosition, TextPosition, Pos
 from src.util import img_util, file_util
@@ -313,7 +317,7 @@ def match_with_index(
 
 def flex_ws(text: str):
     """将字符串内的空白字符 替换为 任意空白正则字符串"""
-    return re.sub(r"\s+", r"\\s*", text)
+    return re.sub(r"\s+", r"\\s*?", text)
 
 
 class IMatch(ABC):
@@ -1106,8 +1110,8 @@ I18N_PAGES_ECHO_MERGE = {
         Languages.ZH: {
             I18nPage.Name: "数据坞-数据融合",
             I18nPage.Include: {
-                I18nPageEchoMerge.DataMerge.TargetedMerge: r"定向融合",
-                I18nPageEchoMerge.DataMerge.StandardMerge: r"标准融合",
+                I18nPageEchoMerge.DataMerge.TargetedMerge: r"定向融合$",
+                I18nPageEchoMerge.DataMerge.StandardMerge: r"标准融合$",
             },
             I18nPage.Exclude: {},
             I18nPage.Assets: [],
@@ -1115,8 +1119,8 @@ I18N_PAGES_ECHO_MERGE = {
         Languages.EN: {
             I18nPage.Name: "DataBank-DataMerge",
             I18nPage.Include: {
-                I18nPageEchoMerge.DataMerge.TargetedMerge: flex_ws(r"Targeted Merge"),
-                I18nPageEchoMerge.DataMerge.StandardMerge: flex_ws(r"Standard Merge"),
+                I18nPageEchoMerge.DataMerge.TargetedMerge: flex_ws(r"Targeted Merge$"),
+                I18nPageEchoMerge.DataMerge.StandardMerge: flex_ws(r"Standard Merge$"),
             },
             I18nPage.Exclude: {},
             I18nPage.Assets: [],
@@ -1189,19 +1193,136 @@ I18N_PAGES_ECHO_MERGE = {
 
 }
 
+# ------------- Guidebook --------------
+
+class I18nPageGuidebook(I18nPage):
+
+    class Activity:
+        pass
+
+    class MaterialsSpots:
+        PAGE = "MaterialsSpots"
+        ForgeryChallenge = "ForgeryChallenge"
+        SimulationChallenge = "SimulationChallenge"
+        BossChallenge = "BossChallenge"
+        TacetSuppression = "TacetSuppression"
+        WeeklyChallenge = "WeeklyChallenge"
+        NightmarePurification = "NightmarePurification"
+        TacetDiscordNest = "TacetDiscordNest"
+
+    class RecurringChallenges:
+        pass
+
+    class PathOfGrowth:
+        pass
+
+    class EnemyTracing:
+        pass
+
+    class Milestones:
+        pass
+
+
+I18N_PAGES_GUIDEBOOK = {
+    I18nPageGuidebook.MaterialsSpots.PAGE: {
+        Languages.ZH: {
+            I18nPage.Name: "素材获取",
+            I18nPage.Include: {
+                # 产出武器及技能材料
+                I18nPageGuidebook.MaterialsSpots.ForgeryChallenge: r"^凝素领域$",
+                # 产出经验材料
+                I18nPageGuidebook.MaterialsSpots.SimulationChallenge: r"^模拟领域$",
+                # 产出共鸣者突破材料
+                I18nPageGuidebook.MaterialsSpots.BossChallenge: r"^讨伐强敌$",
+                # 产出声骸材料
+                I18nPageGuidebook.MaterialsSpots.TacetSuppression: r"^无音清剿$",
+                # 产出高级技能材料
+                I18nPageGuidebook.MaterialsSpots.WeeklyChallenge: r"^战歌重奏$",
+                # 产出梦魇声骸
+                I18nPageGuidebook.MaterialsSpots.NightmarePurification: r"^梦魇祓除$",
+                # 产出声骸套件
+                I18nPageGuidebook.MaterialsSpots.TacetDiscordNest: r"^残像聚落$",
+            },
+            I18nPage.Exclude: {},
+            I18nPage.Assets: [],
+        },
+        Languages.EN: {
+            I18nPage.Name: "Materials Spots",
+            I18nPage.Include: {
+                I18nPageGuidebook.MaterialsSpots.ForgeryChallenge: flex_ws(r"^Forgery Challenge$"),
+                I18nPageGuidebook.MaterialsSpots.SimulationChallenge: flex_ws(r"^Simulation Challenge$"),
+                I18nPageGuidebook.MaterialsSpots.BossChallenge: flex_ws(r"^Boss Challenge$"),
+                I18nPageGuidebook.MaterialsSpots.TacetSuppression: flex_ws(r"^Tacet Suppression$"),
+                I18nPageGuidebook.MaterialsSpots.WeeklyChallenge: flex_ws(r"^Weekly Challenge$"),
+                I18nPageGuidebook.MaterialsSpots.NightmarePurification: flex_ws(r"^Nightmare Purification$"),
+                I18nPageGuidebook.MaterialsSpots.TacetDiscordNest: flex_ws(r"^Tacet Discord Nest$"),
+            },
+            I18nPage.Exclude: {},
+            I18nPage.Assets: [],
+        },
+
+    },
+
+}
+
+
 class I18nText:
-    GameWindowTitle = "GameWindowTitle"
+    # ------- game window title -------
+    WutheringWaves = "WutheringWaves"
+
+    # ------- login -------
     Login = "Login"
+
+    # ------- map -------
+    FastTravel = "FastTravel"
+
+    # ------- combat -------
+    Absorb = "Absorb"
+
+    # ------- terminal -------
     DataBank = "DataBank"
+    Guidebook = "Guidebook"
+
+    # ------- data bank -------
     TargetedMerge = "TargetedMerge"
     StandardMerge = "StandardMerge"
     PleaseSelectAtLeast5Echoes = "PleaseSelectAtLeast5Echoes"
     DataMergeCount = "DataMergeCount"
 
+    # ------- Guidebook -------
+    Activity = "Activity"
+    MaterialsSpots = "MaterialsSpots"
+    RecurringChallenges = "RecurringChallenges"
+    PathOfGrowth = "PathOfGrowth"
+    EnemyTracing = "EnemyTracing"
+    Milestones = "Milestones"
+
+    ## ------- Guidebook MaterialsSpots -------
+    ForgeryChallenge = "ForgeryChallenge"
+    SimulationChallenge = "SimulationChallenge"
+    BossChallenge = "BossChallenge"
+    TacetSuppression = "TacetSuppression"
+    WeeklyChallenge = "WeeklyChallenge"
+    NightmarePurification = "NightmarePurification"
+    TacetDiscordNest = "TacetDiscordNest"
+
+    ### ------- Guidebook MaterialsSpots tacetDiscordNest -------
+    # LahaiRoi = "LahaiRoi"
+    StarblindCrashsiteTacetDiscordNest = "StarblindCrashsiteTacetDiscordNest"
+    RebirthUplandsTacetDiscordNest = "RebirthUplandsTacetDiscordNest"
+    StagnantRunTacetDiscordNest = "StagnantRunTacetDiscordNest"
+    # TacetDiscordNest = "TacetDiscordNest"
+    TacetDiscordDefeated = "TacetDiscordDefeated"
+    Go = "Go"
+
+    # ------- Home TacetDiscordNest -------
+    ClearTheTacetDiscordNest = "ClearTheTacetDiscordNest"
+    TacetDiscordNestCleared = "TacetDiscordNestCleared"
+
 
 I18N_TEXT = {
     # ------- game window title -------
-    I18nText.GameWindowTitle: {
+    I18nText.WutheringWaves: {
         Languages.ZH: "鸣潮  ",
         Languages.EN: "Wuthering Waves  ",
     },
@@ -1212,10 +1333,26 @@ I18N_TEXT = {
         Languages.EN: flex_ws(r"^Login$"),
     },
 
+    # ------- map -------
+    I18nText.FastTravel: {
+        Languages.ZH: r"^快速旅行$",
+        Languages.EN: flex_ws(r"^Fast Travel$"),
+    },
+
+    # ------- combat -------
+    I18nText.Absorb: {
+        Languages.ZH: r"^吸收$",
+        Languages.EN: flex_ws(r"^Absorb$"),
+    },
+
     # ------- terminal -------
     I18nText.DataBank: {
         Languages.ZH: r"^数据坞$",
         Languages.EN: flex_ws(r"^Data Bank$"),
+    },
+    I18nText.Guidebook: {
+        Languages.ZH: r"^索拉指南$",
+        Languages.EN: flex_ws(r"^Guidebook$"),
     },
 
     # ------- data bank -------
@@ -1229,8 +1366,8 @@ I18N_TEXT = {
     },
     I18nText.PleaseSelectAtLeast5Echoes: {
         # Languages.ZH: r"^请至少放入5个声骸",
-        # Languages.EN: flex_ws(r"^Please select at least 5 Echoes"),
         Languages.ZH: r"^请至少放入",
+        # Languages.EN: flex_ws(r"^Please select at least 5 Echoes"),
         Languages.EN: flex_ws(r"^Please select at least"),
     },
     I18nText.DataMergeCount: {
@@ -1238,6 +1375,109 @@ I18N_TEXT = {
         Languages.EN: flex_ws(r"^Data Merge Count"),
     },
 
+    # ------- Guidebook -------
+    I18nText.Activity: {
+        Languages.ZH: r"^活跃度$",
+        Languages.EN: flex_ws(r"^Activity$"),
+    },
+    I18nText.MaterialsSpots: {
+        Languages.ZH: r"^素材获取$",
+        Languages.EN: flex_ws(r"^Materials Spots$"),
+    },
+    I18nText.RecurringChallenges: {
+        Languages.ZH: r"^周期挑战$",
+        Languages.EN: flex_ws(r"^Recurring Challenges$"),
+    },
+    I18nText.PathOfGrowth: {
+        Languages.ZH: r"^强者之路$",
+        Languages.EN: flex_ws(r"^Path of Growth$"),
+    },
+    I18nText.EnemyTracing: {
+        Languages.ZH: r"^敌迹探寻$",
+        Languages.EN: flex_ws(r"^Enemy Tracing$"),
+    },
+    I18nText.Milestones: {
+        Languages.ZH: r"^漂泊日志$",
+        Languages.EN: flex_ws(r"^Milestones$"),
+    },
+
+    ## ------- Guidebook MaterialsSpots -------
+    # 产出武器及技能材料
+    I18nText.ForgeryChallenge: {
+        Languages.ZH: r"^凝素领域$",
+        Languages.EN: flex_ws(r"^Forgery Challenge$"),
+    },
+    # 产出经验材料
+    I18nText.SimulationChallenge: {
+        Languages.ZH: r"^模拟领域$",
+        Languages.EN: flex_ws(r"^Simulation Challenge$"),
+    },
+    # 产出共鸣者突破材料
+    I18nText.BossChallenge: {
+        Languages.ZH: r"^讨伐强敌$",
+        Languages.EN: flex_ws(r"^Boss Challenge$"),
+    },
+    # 产出声骸材料
+    I18nText.TacetSuppression: {
+        Languages.ZH: r"^无音清剿$",
+        Languages.EN: flex_ws(r"^Tacet Suppression$"),
+    },
+    # 产出高级技能材料
+    I18nText.WeeklyChallenge: {
+        Languages.ZH: r"^战歌重奏$",
+        Languages.EN: flex_ws(r"^Weekly Challenge$"),
+    },
+    # 产出梦魇声骸
+    I18nText.NightmarePurification: {
+        Languages.ZH: r"^梦魇祓除$",
+        Languages.EN: flex_ws(r"^Nightmare Purification$"),
+    },
+    # 产出声骸套件
+    I18nText.TacetDiscordNest: {
+        Languages.ZH: r"^残象聚落$",
+        Languages.EN: flex_ws(r"^Tacet Discord Nest$"),
+    },
+
+    ### ------- Guidebook MaterialsSpots tacetDiscordNest -------
+    # I18nText.LahaiRoi: {
+    #     Languages.ZH: r"^拉海洛$",
+    #     Languages.EN: flex_ws(r"^Lahai-Roi$"),
+    # },
+    I18nText.StarblindCrashsiteTacetDiscordNest: {
+        Languages.ZH: r"^盲望之塌残象聚落$",
+        # Languages.EN: flex_ws(r"^Starblind Crashsite Tacet Discord Nest"),
+        Languages.EN: flex_ws(r"^Starblind Crashsite"),
+    },
+    I18nText.RebirthUplandsTacetDiscordNest: {
+        Languages.ZH: r"^复生丘原残象聚落$",
+        # Languages.EN: flex_ws(r"^Rebirth Uplands Tacet Discord Nest"),
+        Languages.EN: flex_ws(r"^Rebirth Uplands"),
+    },
+    I18nText.StagnantRunTacetDiscordNest: {
+        Languages.ZH: r"^陷足流川残象聚落$",
+        # Languages.EN: flex_ws(r"^Stagnant RunTacet Discord Nest"),
+        Languages.EN: flex_ws(r"^Stagnant Run"),
+    },
+    I18nText.TacetDiscordDefeated: {
+        # 已击败残象:0/48
+        Languages.ZH: r"^已击败残象.*\d.*",
+        # TDs defeated: 0/48
+        Languages.EN: flex_ws(r"^TDs defeated.*\d.*"),
+    },
+    I18nText.Go: {
+        Languages.ZH: r"^前往$",
+        Languages.EN: flex_ws(r"^Go$"),
+    },
+
+    # ------- Home TacetDiscordNest -------
+    I18nText.ClearTheTacetDiscordNest: {
+        Languages.ZH: r"^清理聚落中的残象$",
+        Languages.EN: flex_ws(r"^Clear the Tacet Discord Nest$"),
+    },
+    I18nText.TacetDiscordNestCleared: {
+        Languages.ZH: r"^残象聚落已清理$",
+        Languages.EN: flex_ws(r"^Tacet Discord Nest Cleared$"),
+    },
 
 
 
@@ -1266,9 +1506,12 @@ class I18nPageX:
                 self.i18n_regex_pages.setdefault(k_lang, {})[page_key] = RegexPage(page_key, v_page)
 
 
-class OcrResult:
+@lru_cache(maxsize=2000)
+def _cached_compile_regex(regex_str: str, flags=re.I) -> Pattern:
+    return re.compile(regex_str, flags)
 
-    _CACHE = {}
+
+class OcrResult:
 
     def __init__(self, results: list[TextBox]):
         self.results: list[TextBox] = results
@@ -1277,39 +1520,320 @@ class OcrResult:
         return self.results is not None and len(self.results) > 0
 
     def search(
+            self, regex_str: str | list[str], roi: Optional[BBox] = None, flags=re.I
+    ) -> Optional[list[TextBox]]:
+        """ 在结果中搜索符合正则的文本 """
+        return self.__search(regex_str, roi, flags, False)
+
+    def search_with_index(
+            self, regex_str: str | list[str], roi: Optional[BBox] = None, flags=re.I
+    ) -> Optional[list[tuple[int, TextBox]]]:
+        """ 在结果中搜索符合正则的文本 带索引 """
+        return self.__search(regex_str, roi, flags, True)
+
+    def __search(
             self,
             regex_str: str | list[str],
-            bbox: Optional[BBox] = None,
-            flags=re.I
-    ) -> Optional[list[TextBox]]:
+            roi: Optional[BBox] = None,
+            flags=re.I,
+            with_index: bool = False,
+    ):
         """
-        在结果中搜索文本
+        搜索文本
         :param regex_str: 支持正则
-        :param bbox: 支持框定文本位置范围
+        :param roi: 支持框定文本位置范围
         :param flags: 默认忽略大小写
+        :param with_index: 是否带下标索引，下标为regex_str的下标
         :return:
         """
         if not regex_str:
             raise ValueError()
         if not self.has_results():
             return None
+        found_boxes = []
+        regex_str = [regex_str] if isinstance(regex_str, str) else regex_str
+        patterns = [_cached_compile_regex(i, flags) for i in regex_str]
+        for text_box in self.results:
+            for index, pattern in enumerate(patterns):
+                match = pattern.search(text_box.text)
+                if not match:
+                    continue
+                if roi and not roi.contains_bbox(text_box):
+                    continue
+                if with_index:
+                    found_boxes.append((index, text_box))
+                else:
+                    found_boxes.append(text_box)
+        return found_boxes
+
+    def search_group(
+            self, regex_str: str | list[str], roi: Optional[TextBox] = None, flags=re.I
+    ) -> Optional[list[TextBox]]:
+        """ 合并搜索 """
+        if not regex_str:
+            raise ValueError()
+        if not self.has_results():
+            return None
         match_list = []
         if isinstance(regex_str, str):
-            # or返回原值
-            pattern = self._CACHE.get(regex_str) or build_combined_regex([regex_str], flags)
+            pattern = _cached_compile_regex(regex_str, flags)
         else:
+            # 输入正则内有括号下标会加一错位
             pattern = build_combined_regex(regex_str, flags)
-        for box in self.results:
-            m_inc = pattern.search(box.text)
+        for text_box in self.results:
+            m_inc = pattern.search(text_box.text)
             if not m_inc:
                 continue
-            if not bbox or bbox.contains_bbox(box):
-                match_list.append(box)
+            if not roi or roi.contains_bbox(text_box):
+                match_list.append(text_box)
         return match_list
 
 
+class Wait:
+
+    def __init__(self, timeout: float, interval: float):
+        self.timeout = timeout  # 单位都是秒
+        self.interval = interval
+
+    def until(self, fn, *, predicate=bool):
+        deadline = time.monotonic() + self.timeout
+
+        while time.monotonic() < deadline:
+            res = fn()
+            if predicate(res):
+                return res
+            time.sleep(self.interval)
+
+        return None
 
 
+class OcrQuery:
+    """ 整合一些常用的Ocr操作，减少重复代码 """
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+        self.img = None
+        self.results: OcrResult = None
+        # 保证每张图只查一次，及时抛出异常提醒
+        self._is_query = False
+
+    def grab(self, img: Optional[np.ndarray] = None) -> "OcrQuery":
+        if img is None:
+            self.img = self.ctx.img_service.screenshot()
+        else:
+            self.img = img
+        self._is_query = False
+        return self
+
+    def query(self) -> "OcrQuery":
+        if self._is_query:
+            raise Exception("OcrQuery is already query")
+        self.results = self.ctx.ocr_service.query(self.img)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"ocr result: {self.results.results}")
+        self._is_query = True
+        return self
+
+    def has_results(self) -> bool:
+        return bool(self.results) and self.results.has_results()
+
+    def search(self, regex_str: str | list[str], roi: Optional[BBox] = None, flags=re.I) -> Optional[list[TextBox]]:
+        if not self.results:
+            return None
+        return self.results.search(regex_str, roi, flags)
+
+    def search_with_index(self, regex_str: str | list[str], roi: Optional[BBox] = None, flags=re.I) -> Optional[list[tuple[int, TextBox]]]:
+        if not self.results:
+            return None
+        return self.results.search_with_index(regex_str, roi, flags)
+
+    def poll(self, func, timeout: float = 3.0, interval: float = 0.1):
+        start = time.monotonic()
+        end = start + timeout
+        while True:
+            result = func()
+            if result:
+                return result
+            if time.monotonic() >= end:
+                return None
+            time.sleep(interval)
+
+    def wait(self, timeout: float = 3.0, interval: float = 0.1):
+        return Wait(timeout, interval)
+
+
+class UIOp:
+    """
+    UI Operation
+    整合一些常用的ui操作，减少重复代码
+    """
+
+    def __init__(self, ctx, page_service=None):
+        self.ctx = ctx
+        self.oq = OcrQuery(self.ctx)
+        # 绑定页面，在指定页面内搜索，默认为全局公共页面
+        self.page_service = page_service if page_service else self.ctx.page_service
+
+        # runtime
+        self.__color_match = None
+
+    def grap(self):
+        return self.ctx.img_service.screenshot()
+
+    def snapshot(self, img: Optional[np.ndarray] = None):
+        self.oq = OcrQuery(self.ctx).grab(img).query()
+        return self
+
+    def is_match(self, page: str):
+        return self.page_service.is_match(self.oq.results, page)
+
+    def search(self, regex_str: str | list[str], roi: Optional[BBox] = None, flags=re.I) -> Optional[list[TextBox]]:
+        return self.oq.search(regex_str, roi, flags)
+
+    def search_by_key(
+            self, i18n_text: str | list[str], roi: Optional[BBox] = None, flags=re.I) -> Optional[list[TextBox]]:
+        i18n_text = i18n_text if isinstance(i18n_text, list) else [i18n_text]
+        return self.oq.search([self.ctx.tr(i) for i in i18n_text], roi, flags)
+
+    def search_with_index(
+            self, regex_str: str | list[str], roi: Optional[BBox] = None, flags=re.I
+    ) -> Optional[list[tuple[int, TextBox]]]:
+        return self.oq.search_with_index(regex_str, roi, flags)
+
+    def wait(self, timeout: float = 3.0, interval: float = 0.1):
+        return self.oq.wait(timeout, interval)
+
+    def __click(self, x: int, y: int, times: int = 1, interval: float = 0.0):
+        if times < 1 or interval < 0:
+            raise ValueError(f"Invalid value: {times} / {interval}")
+        for i in range(times):
+            self.ctx.control_service.click(x, y)
+            if times > 1:
+                self.sleep(interval)
+        return self
+
+    def click_point(self, point: Point, times: int = 1, interval: float = 0.0):
+        if isinstance(point, AnchorPoint):
+            point = self.ctx.scaler.as_point(point)
+        self.__click(point.x, point.y, times, interval)
+        return self
+
+    def click_bbox(self, bbox: BBox, pk: PointKind = PointKind.CENTER, times: int = 1, interval: float = 0.0):
+        if isinstance(bbox, AnchorBBox):
+            bbox = self.ctx.scaler.as_bbox(bbox)
+        if pk == PointKind.CENTER:
+            point = bbox.center
+        elif pk == PointKind.NEAR:
+            point = bbox.near
+        elif pk == PointKind.RANDOM:
+            point = bbox.random
+        else:
+            raise ValueError("Unsupported PointKind")
+        self.__click(point[0], point[1], times, interval)
+        return self
+
+    def click_key(self, match, key, pk: PointKind = PointKind.CENTER):
+        bbox = match.get(key)
+        self.click_bbox(bbox, pk)
+        return self
+
+    def click_text(
+        self,
+        regex_str: str | list[str],
+        roi: Optional[BBox] = None,
+        index: int = 0,
+        pk: PointKind = PointKind.CENTER,
+        times: int = 1,
+        interval: float = 0.0,
+    ) -> bool:
+        res = self.search(regex_str, roi)
+        if not res or len(res) <= index:
+            return False
+        self.click_bbox(res[index], pk, times, interval)
+        return True
+
+    def sleep(self, t):
+        if not self.ctx.runtime.stop_event.is_set():
+            raise StopError()
+        time.sleep(t)
+        if not self.ctx.runtime.stop_event.is_set():
+            raise StopError()
+        return self
+
+    def esc(self):
+        self.ctx.control_service.esc()
+        return self
+
+    def activate(self):
+        self.ctx.control_service.activate()
+        return self
+
+    def trs(self, texts: list[str]) -> list[str]:
+        """批量翻译"""
+        return [self.ctx.tr(text) for text in texts]
+
+    def __init_color_match(self):
+        points = [
+            # 任务
+            AnchorPoint(14, 153, Align.Top | Align.Left), AnchorPoint(26, 152, Align.Top | Align.Left),
+            # 背包
+            AnchorPoint(214, 44, Align.Top | Align.Left), AnchorPoint(222, 44, Align.Top | Align.Left),
+            # 飞讯
+            AnchorPoint(274, 31, Align.Top | Align.Left), AnchorPoint(280, 38, Align.Top | Align.Left),
+            # # 先约电台
+            # AnchorPoint(1114, 24, Align.Top | Align.Right),
+            # 共鸣者
+            AnchorPoint(1156, 28, Align.Top | Align.Right), AnchorPoint(1160, 30, Align.Top | Align.Right),
+            # 终端
+            AnchorPoint(1221, 34, Align.Top | Align.Right), AnchorPoint(1222, 35, Align.Top | Align.Right),
+        ]
+        rule = ColorRule().points(points).colors(Color.bgr(255, 255, 255), 10, RuleMode.ALL)
+        self.__color_match = ColorMatch(self.ctx.scaler).rules(rule)
+
+    def wait_back_home(self, timeout: int = 60, interval: float = 1.0):
+        """ 循环等待回到主界面 """
+        if not self.__color_match:
+            self.__init_color_match()
+
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            self.activate().sleep(0.1)
+            img = self.grap()
+            if self.__color_match.match(img):
+                return self
+            self.sleep(interval)
+
+        # 卡在加载，强制关闭
+        self.ctx.control_service.close_window()
+        raise Exception("等待回到主界面超时")
+
+    def execute_route(self, route_steps):
+        """执行路线步骤"""
+        for step in route_steps:
+            if step.mode == MoveMode.WALK:
+                self._execute_walk_step(step)
+            elif step.mode == MoveMode.RUN:
+                self._execute_run_step(step)
+
+    def _execute_walk_step(self, step):
+        """执行行走步骤"""
+        if step.steps and step.steps > 0:
+            self.ctx.control_service.forward_walk(
+                step.steps, Direction.get_key(step.direction)
+            )
+        elif step.duration and step.duration > 0:
+            # 行走模式按时间移动（待实现）
+            pass
+
+    def _execute_run_step(self, step):
+        """执行跑步步骤"""
+        if step.steps and step.steps > 0:
+            # 跑步模式按步数移动（待实现）
+            pass
+        elif step.duration and step.duration > 0:
+            self.ctx.control_service.forward_run(
+                step.duration, Direction.get_key(step.direction)
+            )
 
 
 
