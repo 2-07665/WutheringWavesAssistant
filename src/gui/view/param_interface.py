@@ -1137,7 +1137,7 @@ class SimpleCardGroup(QWidget):
         self.cardLayout.setContentsMargins(0, 0, 0, 0)
         self.cardLayout.setSpacing(2)
 
-        self.vBoxLayout.addSpacing(12)
+        # self.vBoxLayout.addSpacing(12)
         self.vBoxLayout.addLayout(self.cardLayout, 1)
 
         FluentStyleSheet.SETTING_CARD_GROUP.apply(self)
@@ -1154,7 +1154,8 @@ class SimpleCardGroup(QWidget):
             self.addSettingCard(card)
 
     def adjustSize(self):
-        h = self.cardLayout.heightForWidth(self.width()) + 46
+        # h = self.cardLayout.heightForWidth(self.width()) + 46
+        h = self.cardLayout.heightForWidth(self.width()) + 0
         return self.resize(self.width(), h)
 
 
@@ -1187,7 +1188,7 @@ class AutoBossParamSettingCard(QWidget):
         self.__initWidget()
 
     def __initWidget(self):
-        self.resize(1000, 800)
+        # self.resize(1000, 800)
         # self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # self.setViewportMargins(0, 0, 0, 0)
@@ -1217,7 +1218,7 @@ class AutoBossParamSettingCard(QWidget):
         # self.bossGroup.addSettingCard(self.autoRestartPeriodCard)
 
         # add setting card group to layout
-        self.expandLayout.setSpacing(28)
+        # self.expandLayout.setSpacing(28)
         # self.expandLayout.setContentsMargins(36, 10, 36, 0)
         self.expandLayout.setContentsMargins(0, 0, 0, 0)
         self.expandLayout.setAlignment(Qt.AlignTop)
@@ -1248,7 +1249,7 @@ class MacroParamSettingCard(ScrollArea):
         self.defaultTemplateComboBox.setCurrentIndex(0)
 
         self.userTemplateLabel = QLabel(
-            f"自定义模板  目录: {str(self.getMacroSoarToTheBeatPath())}", self.scrollWidget)
+            self.tr("自定义模板  目录: {dir}").format(dir=str(self.getMacroSoarToTheBeatPath())), self.scrollWidget)
         self.userTemplateLabel.setWordWrap(True)
 
         self.userTemplateComboBox = ComboBox(self.scrollWidget)
@@ -1268,7 +1269,7 @@ class MacroParamSettingCard(ScrollArea):
         self.__initParam()
 
     def __initWidget(self):
-        self.resize(1000, 800)
+        # self.resize(1000, 800)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setViewportMargins(0, 0, 0, 0)
@@ -1279,7 +1280,7 @@ class MacroParamSettingCard(ScrollArea):
         self.refreshButton.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
 
         # initialize style sheet
-        self.scrollWidget.setObjectName('scrollWidget')
+        self.scrollWidget.setObjectName('view')
         StyleSheet.PARAM_INTERFACE.apply(self)
 
         # initialize layout
@@ -1290,7 +1291,6 @@ class MacroParamSettingCard(ScrollArea):
         self.hBoxLayout.addWidget(self.refreshButton)
         self.hBoxLayout.addWidget(self.useUserTemplateButton)
         self.hBoxLayout.addWidget(self.aboutFlyoutButton)
-        # self.hBoxLayout.addSpacing(20)
         self.hBoxLayout.addWidget(self.escLabel)
         self.hBoxLayout.addStretch()
         self.hBoxLayout.setSpacing(15)
@@ -1301,8 +1301,8 @@ class MacroParamSettingCard(ScrollArea):
         self.vBoxLayout.addWidget(self.userTemplateComboBox)
         self.vBoxLayout.addLayout(self.hBoxLayout)
         self.vBoxLayout.setSpacing(11)
-        self.vBoxLayout.setContentsMargins(36, 10, 36, 10)
-        self.vBoxLayout.setAlignment(Qt.AlignTop)
+        self.vBoxLayout.setContentsMargins(36, 0, 36, 0)
+        self.vBoxLayout.setAlignment(Qt.AlignVCenter)
 
     def __connectSignalToSlot(self):
         self.defaultTemplateComboBox.currentTextChanged.connect(self.onDefaultTemplateComboboxTextChanged)

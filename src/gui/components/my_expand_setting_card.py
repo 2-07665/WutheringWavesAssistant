@@ -46,7 +46,7 @@ class FlowExpandSettingCard(QScrollArea):
 
         # initialize expand animation
         self.expandAni.setEasingCurve(QEasingCurve.OutQuad)
-        self.expandAni.setDuration(200)
+        self.expandAni.setDuration(100)
 
         # initialize style sheet
         self.view.setObjectName('view')

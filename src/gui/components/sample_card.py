@@ -311,14 +311,13 @@ class SimpleExpandWidget(QWidget):
     def __init__(self, parent=None, index=None):
         super().__init__(parent)
 
-        # self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         #  调试边框
         # self.setStyleSheet("border: 2px solid red;")
 
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setContentsMargins(0, 0, 0, 10)
 
         # self.label = QLabel("这里是展开区域", self)
         # self.layout.addWidget(self.label)
@@ -349,7 +348,7 @@ class SampleCardView(QWidget):
         self.flowLayout.setVerticalSpacing(12)
 
         self.vBoxLayout.addWidget(self.titleLabel)
-        self.vBoxLayout.addLayout(self.flowLayout, 1)
+        self.vBoxLayout.addLayout(self.flowLayout)
 
         self.titleLabel.setObjectName('viewTitleLabel')
         StyleSheet.SAMPLE_CARD.apply(self)

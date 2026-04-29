@@ -118,7 +118,7 @@ class HomeInterface(ScrollArea):
         self.scrollLayout.setSpacing(10)
         self.scrollLayout.setAlignment(Qt.AlignTop)
 
-        # 布局结构R
+        # 布局结构
         self.mainLayout.addWidget(self.banner)
         self.mainLayout.addWidget(self.scrollArea, 1)
 

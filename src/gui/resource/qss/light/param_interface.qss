@@ -18,3 +18,10 @@ QLabel {
     font: 14px 'Segoe UI', 'Microsoft YaHei', 'PingFang SC';
     color: black;
 }
+
+/*
+#view {
+    background: rgba(255, 255, 255, 0.667);
+    border: 1px solid rgba(0, 0, 0, 0.073);
+}
+*/
