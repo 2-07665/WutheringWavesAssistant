@@ -232,4 +232,4 @@ class EchoMergeWorkflow(IWorkflow):
     def execute(self, **kwargs):
         self.ctx.control_service.activate()
         time.sleep(0.1)
-        self.engine.run(self.ctx, **kwargs)
+        self.engine.run(self.ctx, self, **kwargs)
