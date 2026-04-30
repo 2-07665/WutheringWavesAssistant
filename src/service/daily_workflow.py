@@ -110,16 +110,16 @@ def navigateToGuidebook(ctx: NodeContext, local: TaskLocal, **kwargs) -> Optiona
         ui.sleep(0.8)
 
     # 左侧图标坐标
-    activitySidebar = AnchorPoint(50, 117, Align.Top | Align.Left)
-    materialsSpotsSidebar = AnchorPoint(50, 208, Align.Top | Align.Left)
-    recurringChallengesSidebar = AnchorPoint(50, 300, Align.Top | Align.Left)
-    pathOfGrowthSidebar = AnchorPoint(50, 385, Align.Top | Align.Left)
+    activitySidebar = AnchorPoint(50, 128, Align.Top | Align.Left)
+    materialsSpotsSidebar = AnchorPoint(50, 218, Align.Top | Align.Left)
+    recurringChallengesSidebar = AnchorPoint(50, 308, Align.Top | Align.Left)
+    pathOfGrowthSidebar = AnchorPoint(50, 396, Align.Top | Align.Left)
     enemyTracingSidebar = [
-        AnchorPoint(50, 475, Align.Top | Align.Left),
-        AnchorPoint(50, 565, Align.Top | Align.Left),
-        AnchorPoint(50, 385, Align.Top | Align.Left),
+        AnchorPoint(50, 487, Align.Top | Align.Left),
+        AnchorPoint(50, 578, Align.Top | Align.Left),
+        AnchorPoint(50, 396, Align.Top | Align.Left),
     ]
-    milestonesSidebar = AnchorPoint(50, 564, Align.Top | Align.Left)
+    milestonesSidebar = AnchorPoint(50, 578, Align.Top | Align.Left)
 
     # 进入索拉指南后，默认是 活跃度 或 素材获取 页
     activity = ctx.tr(I18nText.Activity)

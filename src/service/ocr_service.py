@@ -156,10 +156,13 @@ class RapidOcrServiceImpl(AbstractOcrService):
             det=True,
             rec=True,
             cls=False,
+            resize=True,
     ) -> OcrResult:
         if bbox:
             img = img[bbox.as_slice()]
-        img, ratio = self._resize_img(img)
+        ratio = None
+        if resize:
+            img, ratio = self._resize_img(img)
         if det is True and rec is True and cls is False:
             output = self._engine(img, use_det=True, use_rec=True, use_cls=False)
             result = RapidocrTextBox.format(output)
@@ -168,7 +171,8 @@ class RapidOcrServiceImpl(AbstractOcrService):
             result = RapidocrTextBox.format(output)
         else:
             raise NotImplementedError("不支持的识别方式")
-        result = self._resize_bboxes(result, ratio)
+        if resize:
+            result = self._resize_bboxes(result, ratio)
         return OcrResult(result)
 
 
@@ -262,10 +266,13 @@ class PaddleOcrServiceImpl(AbstractOcrService):
             det=True,
             rec=True,
             cls=False,
+            resize=True,
     ) -> OcrResult:
         if bbox:
             img = img[bbox.as_slice()]
-        img, ratio = self._resize_img(img)
+        ratio = None
+        if resize:
+            img, ratio = self._resize_img(img)
         if det is True and rec is True and cls is False:
             output = self._engine(img, use_det=True, use_rec=True, use_cls=False)
             result = PaddleocrTextBox.format(output)
@@ -274,7 +281,8 @@ class PaddleOcrServiceImpl(AbstractOcrService):
             result = PaddleocrTextBox.format(output)
         else:
             raise NotImplementedError("不支持的识别方式")
-        result = self._resize_bboxes(result, ratio)
+        if resize:
+            result = self._resize_bboxes(result, ratio)
         return OcrResult(result)
 
 # SVTR

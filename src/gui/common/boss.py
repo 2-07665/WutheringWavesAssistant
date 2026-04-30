@@ -46,3 +46,4 @@ class BossNameEnum(Enum):
     ReactorHusk = "炉芯机骸"
     Sigillum = "辛吉勒姆"
     NamelessExplorer = "无铭探索者"
+    SeedOfLllusoryOrigin = "虚妄诞生之种（限时提前开放）"

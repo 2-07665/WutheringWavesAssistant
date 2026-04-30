@@ -8,9 +8,11 @@ from typing import Callable
 import numpy as np
 
 from src.core.boss import BossNameEnum, MoveMode, Direction, RouteStep
+from src.core.color import ColorRule, Color, ColorMatch
 from src.core.combat.combat_core import ResonatorNameEnum, BaseResonator, ScenarioEnum
 from src.core.combat.combat_system import CombatSystem
 from src.core.contexts import Context, Status
+from src.core.geometry import AnchorPoint, Align, AnchorBBox
 from src.core.interface import ControlService, OCRService, PageEventService, ImgService, WindowService, ODService, \
     BossInfoService
 from src.core.languages import Languages
@@ -54,7 +56,19 @@ class PageEventAbstractService(PageEventService, ABC):
         self.combat_system.is_async = True
 
         # param
-        self._echo_hunting_pos_1280_list = [(50, 475), (50, 565), (50, 385)]
+        self._echo_hunting_pos_1280_list = [(50, 487), (50, 578), (50, 396)]
+
+        # 左侧图标坐标
+        self.activitySidebar = AnchorPoint(50, 128, Align.Top | Align.Left)
+        self.materialsSpotsSidebar = AnchorPoint(50, 218, Align.Top | Align.Left)
+        self.recurringChallengesSidebar = AnchorPoint(50, 308, Align.Top | Align.Left)
+        self.pathOfGrowthSidebar = AnchorPoint(50, 396, Align.Top | Align.Left)
+        self.enemyTracingSidebar = [
+            AnchorPoint(50, 487, Align.Top | Align.Left),
+            AnchorPoint(50, 578, Align.Top | Align.Left),
+            AnchorPoint(50, 396, Align.Top | Align.Left),
+        ]
+        self.milestonesSidebar = AnchorPoint(50, 578, Align.Top | Align.Left)
 
     def execute(self,
                 src_img: np.ndarray | None = None,
@@ -1562,7 +1576,10 @@ class PageEventAbstractService(PageEventService, ABC):
             #     time.sleep(1)
             return
 
-        if self._info.lastBossName in [BossNameEnum.Fleurdelys.value, BossNameEnum.ThrenodianLeviathan.value]:
+        if self._info.lastBossName in [
+            BossNameEnum.Fleurdelys.value, BossNameEnum.ThrenodianLeviathan.value,
+            BossNameEnum.SeedOfLllusoryOrigin.value
+        ]:
             self.absorption_action_fleurdelys()
             return
         elif self._info.lastBossName == BossNameEnum.Fenrico.value:
@@ -2276,12 +2293,55 @@ class PageEventAbstractService(PageEventService, ABC):
             self.combat_system.pause()
             time.sleep(0.2)
 
-        dpt = DynamicPointTransformer(self._window_service.get_client_wh())
+        scaler = self._window_service.scaler
+
+        activitySidebar = scaler.as_point(self.activitySidebar)
+        materialsSpotsSidebar = scaler.as_point(self.materialsSpotsSidebar)
+        recurringChallengesSidebar = scaler.as_point(self.recurringChallengesSidebar)
+        pathOfGrowthSidebar = scaler.as_point(self.pathOfGrowthSidebar)
+        enemyTracingSidebar = [scaler.as_point(p) for p in self.enemyTracingSidebar]
+        milestonesSidebar = scaler.as_point(self.milestonesSidebar)
+
+        if bossName == BossNameEnum.SeedOfLllusoryOrigin.value:
+            self._control_service.click(*materialsSpotsSidebar)
+            time.sleep(0.6)
+            weeklyChallenge = self._ocr_service.wait_text(r"^(战歌重奏)$")
+            if weeklyChallenge:
+                self._control_service.click(*weeklyChallenge.center)
+                time.sleep(0.2)
+                self._control_service.click(*weeklyChallenge.center)
+                time.sleep(0.6)
+            img = self._img_service.screenshot()
+            result = self._ocr_service.query(img)
+            if result:
+                go_list = result.search(r"^(前往)$")
+                if go_list:
+                    go_list.sort(key=lambda x: x.y1)
+                    self._control_service.click(*go_list[0].center)
+                    time.sleep(0.3)
+                    story = self._ocr_service.wait_text(r"^确认$", timeout=2)
+                    if story:
+                        self._control_service.click(*story.center)
+                        time.sleep(0.1)
+                        self._control_service.click(*story.center)
+                        time.sleep(0.3)
+
+                    now = datetime.now()
+                    self._info.idleTime = now  # 重置空闲时间
+                    self._info.lastFightTime = now  # 重置最近检测到战斗时间
+                    self._info.fightTime = now  # 重置战斗时间
+                    self._info.lastBossName = bossName
+                    self._info.waitBoss = True
+                    return True
+
+            logger.warning("未找到：虚妄诞生之种（限时提前开放）")
+            self._control_service.esc()
+            return False
+
 
         is_enemy_tracing = False
-        for echo_hunting_pos_1280 in self._echo_hunting_pos_1280_list:
-            echo_hunting_pos = dpt.transform(echo_hunting_pos_1280, AlignEnum.TOP_LEFT)
-            self._control_service.click(*echo_hunting_pos)  # 进入残像探寻
+        for enemyTracingPoint in enemyTracingSidebar:
+            self._control_service.click(*enemyTracingPoint)  # 进入残像探寻
 
             enemy_tracing_or_path_of_growth_pos = self._ocr_service.wait_text(
                 r"^(敌迹探寻|Enemy\s*Tracing|探测|Detect|强者之路|Path\s*of\s*Growth|全息战略)$")
@@ -2585,6 +2645,7 @@ class PageEventAbstractService(PageEventService, ABC):
                     BossNameEnum.Fleurdelys.value,
                     BossNameEnum.ThrenodianLeviathan.value,
                     BossNameEnum.Sigillum.value,
+                    BossNameEnum.SeedOfLllusoryOrigin.value,
                 ]
                 )
 
@@ -2759,53 +2820,69 @@ class PageEventAbstractService(PageEventService, ABC):
             quick_setup_pos = self._ocr_service.wait_text("^快速编队$")
             if quick_setup_pos:
                 img = self._img_service.screenshot()
-                ocr_results = self._ocr_service.ocr(img)
+                # ocr_results = self._ocr_service.ocr(img)
+                ocr_results = self._ocr_service.query(img, resize=False)
 
                 # 识别编队
-                dpt = DynamicPointTransformer(img)
-                # 编队123位方框，左上右下坐标
-                member1 = [(205, 123), (439, 583)]
-                member2 = [(549, 123), (783, 583)]
-                member3 = [(893, 123), (1127, 583)]
-                member1 = (dpt.transform(member1[0], AlignEnum.CENTER), dpt.transform(member1[1], AlignEnum.CENTER))
-                member2 = (dpt.transform(member2[0], AlignEnum.CENTER), dpt.transform(member2[1], AlignEnum.CENTER))
-                member3 = (dpt.transform(member3[0], AlignEnum.CENTER), dpt.transform(member3[1], AlignEnum.CENTER))
-
                 members_info: list[list] = [
                     # name text is_exist
                     [None, None, None], [None, None, None], [None, None, None]
                 ]
-                # logger.info(f"ocr_results: {ocr_results}")
-                for ocr_position in ocr_results:
-                    if ocr_position.y1 < member1[0][1] or ocr_position.y1 > member1[1][1]:
+                team_members = [ResonatorNameEnum.none.value for _ in range(3)]
+
+                # 编队角色名右侧一点黑色背景上取点
+                member_points = [
+                    AnchorPoint(433, 569, Align.Center | Align.Middle),
+                    AnchorPoint(810, 569, Align.Center | Align.Middle),
+                    AnchorPoint(1187, 569, Align.Center | Align.Middle),
+                ]
+                member_boxes = [
+                    AnchorBBox(
+                        AnchorPoint(200, 550, Align.Center | Align.Middle),
+                        AnchorPoint(510, 590, Align.Center | Align.Middle),
+                    ),
+                    AnchorBBox(
+                        AnchorPoint(576, 550, Align.Center | Align.Middle),
+                        AnchorPoint(888, 590, Align.Center | Align.Middle),
+                    ),
+                    AnchorBBox(
+                        AnchorPoint(954, 550, Align.Center | Align.Middle),
+                        AnchorPoint(1280, 590, Align.Center | Align.Middle),
+                    ),
+                ]
+                scaler = self._window_service.scaler
+                member_points = [scaler.as_point(p) for p in member_points]
+                member_boxes = [scaler.as_bbox(box) for box in member_boxes]
+
+                color_matches = []
+                for p in member_points:
+                    rule = ColorRule().points(p).colors(Color.bgr(22, 18, 13), 30)
+                    color_matches.append(ColorMatch(scaler).rules(rule))
+
+                for i, match in enumerate(color_matches):
+                    if match.match(img):
+                        members_info[i][2] = True
+
+                for text_box in ocr_results.results:
+                    if text_box.x2 < member_boxes[0].x1:
                         continue
-                    if member1[0][0] <= ocr_position.x2 < member1[1][0]:
-                        member_index = 0
-                    elif member2[0][0] <= ocr_position.x2 < member2[1][0]:
-                        member_index = 1
-                    elif member3[0][0] <= ocr_position.x2 < member3[1][0]:
-                        member_index = 2
-                    else:
+                    if text_box.y2 < member_boxes[0].y1 or text_box.y2 > member_boxes[0].y2:
                         continue
-                    # logger.info(f"ocr_position: {ocr_position}")
-                    if ocr_position and ocr_position.text.startswith("Lv"):
-                        members_info[member_index][2] = True
-                        continue
-                    members_info[member_index][1] = ocr_position
-                    enum_obj = ResonatorNameEnum.get_enum_by_ocr_text(ocr_position.text)
-                    if enum_obj:
-                        members_info[member_index][0] = enum_obj.value
-                # logger.info(f"members_info: {members_info}")
-                team_members = [None, None, None]
-                for index, member_info in enumerate(members_info):
-                    if member_info[2] is True:
-                        if member_info[0] is None:  # 角色名都对不上，默认为主角
-                            team_members[index] = ResonatorNameEnum.rover.value
-                        else:
-                            team_members[index] = member_info[0]
-                    else:
-                        team_members[index] = ResonatorNameEnum.none.value
-                # logger.info(f"编队: {team_members}")
+                    for i, member_bbox in enumerate(member_boxes):
+                        if not member_bbox.contains_bbox(text_box):
+                            continue
+                        if not members_info[i][2]:
+                            continue
+                        members_info[i][1] = text_box
+                        # 通过名称匹配这个位置的角色名
+                        enum_obj = ResonatorNameEnum.get_enum_by_ocr_text(text_box.text)
+                        # 角色名都对不上，默认为主角
+                        members_info[i][0] = enum_obj.value if enum_obj else ResonatorNameEnum.rover.value
+                        team_members[i] = members_info[i][0]
+                        # logger.debug(f"team_members[{i}]: {team_members[i]}")
+
+                # logger.debug(f"members_info: {members_info}")
+                # logger.debug(f"team_members: {team_members}")
 
                 self.combat_system.set_resonators(team_members)
                 self._control_service.esc()

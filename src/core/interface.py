@@ -172,6 +172,7 @@ class OCRService(ABC):
             det=True,
             rec=True,
             cls=False,
+            resize=True,
     ) -> OcrResult:
         pass
 
