@@ -296,7 +296,7 @@ def auto_boss_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
         from src.core.injector import Container
 
         logging_config.setup_logging(ipc.log_queue)
-        logger.debug(f"spec: {json.dumps(spec.__dict__)}")
+        # logger.debug(f"spec: {json.dumps(spec.__dict__)}")
         logger.info("刷boss任务进程开始运行")
 
         context = Context()
@@ -379,7 +379,7 @@ def auto_pickup_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
     from src.core.injector import Container
 
     logging_config.setup_logging(ipc.log_queue)
-    logger.debug(f"spec: {json.dumps(spec.__dict__)}")
+    # logger.debug(f"spec: {json.dumps(spec.__dict__)}")
     logger.info("自动拾取任务进程开始运行")
 
     context = Context()
@@ -432,7 +432,7 @@ def auto_story_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
     from src.core.injector import Container
 
     logging_config.setup_logging(ipc.log_queue)
-    logger.debug(f"spec: {json.dumps(spec.__dict__)}")
+    # logger.debug(f"spec: {json.dumps(spec.__dict__)}")
     logger.info("自动剧情任务进程开始运行")
 
     context = Context()
@@ -488,7 +488,7 @@ def daily_activity_task_run(event, spec: TaskSpec, ipc: IPCManager, **kwargs):
     from src.core.injector import Container
 
     logging_config.setup_logging(ipc.log_queue)
-    logger.debug(f"spec: {json.dumps(spec.__dict__)}")
+    # logger.debug(f"spec: {json.dumps(spec.__dict__)}")
     logger.info("每日任务进程开始运行")
 
     context = Context()
