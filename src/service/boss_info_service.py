@@ -75,10 +75,12 @@ FAST_TRAVEL_ROUTES: dict[str, list[RouteStep]] = {
     BossNameEnum.ThrenodianLeviathan.value: [RouteStep(direction=Direction.FORWARD, mode=MoveMode.WALK, steps=3)],
     BossNameEnum.Hyvatia.value: [RouteStep(direction=Direction.FORWARD, mode=MoveMode.RUN, duration=4.5)],  # 8
     BossNameEnum.ReactorHusk.value: [RouteStep(direction=Direction.FORWARD, mode=MoveMode.RUN, duration=4.8)],
-    BossNameEnum.Sigillum.value: [RouteStep(direction=Direction.LEFT, mode=MoveMode.WALK, steps=3)],
+    BossNameEnum.Sigillum.value: [RouteStep(direction=Direction.FORWARD, mode=MoveMode.WALK, steps=3)],
     BossNameEnum.NamelessExplorer.value: [
         RouteStep(direction=Direction.FORWARD, mode=MoveMode.WALK, steps=4),
         RouteStep(direction=Direction.LEFT, mode=MoveMode.RUN, duration=1.4)],  # 3.2
+    # BossNameEnum.SeedOfLllusoryOrigin.value: [RouteStep(direction=Direction.FORWARD, mode=MoveMode.WALK, steps=5)],
+    BossNameEnum.Denia.value: [RouteStep(direction=Direction.FORWARD, mode=MoveMode.WALK, steps=5)],
 }
 
 # RouteStep后的移动方式配置，没有的也留痕注释掉，方便后续排查
@@ -122,7 +124,8 @@ RESTART_PARAMS: dict[str, RestartParam] = {
         check_text=None, direction=None, cycle=14, step=2, check_health_bar=True),
     # BossNameEnum.NightmareHecate.value: RestartParam(check_text=None, direction=None, cycle=20, step=2),
     BossNameEnum.Fenrico.value: RestartParam(check_text=None, direction=None, cycle=14, step=2),
-    BossNameEnum.LadyOfTheSea.value: RestartParam(check_text=r"^进入.*最终章.*$", direction=None, cycle=8, step=1),
+    BossNameEnum.LadyOfTheSea.value: RestartParam(
+        check_text=None, direction=None, cycle=8, step=1, restart_text=r"^^进入.*最终章.*$"),
     BossNameEnum.TheFalseSovereign.value: RestartParam(
         check_text=None, direction=None, cycle=12, step=2, check_health_bar=True),
     # BossNameEnum.ThrenodianLeviathan.value: RestartParam(check_text=None, direction=None, cycle=20, step=2),
@@ -133,6 +136,9 @@ RESTART_PARAMS: dict[str, RestartParam] = {
     # BossNameEnum.Sigillum.value: RestartParam(check_text=None, direction=None, cycle=20, step=2),
     BossNameEnum.NamelessExplorer.value: RestartParam(
         check_text=None, direction=Direction.LEFT, cycle=10, step=2, check_health_bar=True),
+    # BossNameEnum.SeedOfLllusoryOrigin.value: RestartParam(check_text=None, direction=None, cycle=20, step=2),
+    BossNameEnum.Denia.value: RestartParam(
+        check_text=None, direction=None, cycle=8, step=1, restart_text=r"^进入声之"),
 }
 
 # 点击重新挑战后的移动方式配置，适用于个别boss刷新位置离重新挑战点较远的情况，有才写

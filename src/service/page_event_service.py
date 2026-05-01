@@ -1578,7 +1578,8 @@ class PageEventAbstractService(PageEventService, ABC):
 
         if self._info.lastBossName in [
             BossNameEnum.Fleurdelys.value, BossNameEnum.ThrenodianLeviathan.value,
-            BossNameEnum.SeedOfLllusoryOrigin.value
+            BossNameEnum.SeedOfLllusoryOrigin.value,
+            BossNameEnum.Denia.value
         ]:
             self.absorption_action_fleurdelys()
             return
@@ -2498,7 +2499,14 @@ class PageEventAbstractService(PageEventService, ABC):
                         if restart_param.check_health_bar is True and BaseResonator.is_boss_health_bar_exist(img):
                             break
 
-                        # restart = self._ocr_service.find_text(restart_param.restart_text, None, search_region)
+                        if restart_param.restart_text:
+                            restart = self._ocr_service.find_text(restart_param.restart_text, None, search_region)
+                            if not restart:
+                                self._control_service.forward_walk(2)
+                                i += 1
+                                continue
+                            break
+
                         # 吸收与奖励重叠时
                         results = self._ocr_service.ocr(img, search_region)
                         absorption = self._ocr_service.search_text(results, "^吸收$")
@@ -2646,6 +2654,7 @@ class PageEventAbstractService(PageEventService, ABC):
                     BossNameEnum.ThrenodianLeviathan.value,
                     BossNameEnum.Sigillum.value,
                     BossNameEnum.SeedOfLllusoryOrigin.value,
+                    BossNameEnum.Denia.value,
                 ]
                 )
 
