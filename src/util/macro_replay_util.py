@@ -287,7 +287,7 @@ class MacroPlayer:
 
 class TriggerController:
 
-    POINTS_1280_720 = [(1139, 77), (1141, 83), (1144, 89), (1222, 38), (1222, 44)]
+    POINTS_1280_720 = [(1136, 77), (1138, 83), (1141, 89), (1219, 38), (1219, 44)]
 
     def __init__(self, hwnd=None, points=None):
         self.key = 0x4A  # J
